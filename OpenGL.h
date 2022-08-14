@@ -520,6 +520,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			//posição
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertice),reinterpret_cast<void*>(offsetof(vertice, posicao)));
 
+			glDisable(GL_CULL_FACE);
 			glDrawElements(GL_TRIANGLES,      // mode
 					//GL_LINES,
 					//GL_POINTS,
@@ -549,7 +550,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vertice),reinterpret_cast<void*>(offsetof(vertice, cor)));
 
 
-
+			glEnable(GL_CULL_FACE);
 			glDrawElements(tipo,      // mode
 				//GL_LINES,
 				//GL_POINTS,
@@ -570,9 +571,8 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 		void mudar_render_res(int X, int Y) {
-			res_interna.x = X;
-			res_interna.y = Y;
-			//glViewport(0, 0, X, Y);
+			glGenFramebuffers(1, &frame_buffer);
+			glViewport(0, 0, X, Y);
 			//cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:" << X << Y <<endl;
 		}
 
@@ -1066,6 +1066,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 								glUniform1i(glGetUniformLocation(shader_s, nome_veriavel.c_str()), a);
 							}
 						}
+
 
 											//input
 						for (int a = 0; a < NO_INPUTS; a++) {

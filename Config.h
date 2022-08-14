@@ -11,9 +11,9 @@ namespace configuracoes {
 	bool desligar = false, minimizado = false, pausa = false;
 	
 
-	JanelaConfig janelaConfig = JanelaConfig("TMP", 256, 256, false, 0, true);
+	//JanelaConfig janelaConfig = JanelaConfig("TMP", 256, 256, false, 0, true);
 
-	
+	JanelaConfig janelaConfig = JanelaConfig("TMP", 720, 720, false, 0, true);
 
 	
 

@@ -1237,8 +1237,8 @@ namespace funcoes_ponte {
 				obj->pegar_componente<render_tilemap>()->camada = lua_tointeger(L, 2);
 			}
 			if (obj->pegar_componente<render_malha>() != NULL) {
-							obj->pegar_componente<render_malha>()->camada = lua_tointeger(L, 2);
-						}
+				obj->pegar_componente<render_malha>()->camada = lua_tointeger(L, 2);
+			}
 
 		}
 		return 0;
@@ -1675,6 +1675,58 @@ namespace funcoes_ponte {
 		return 1;
 	}
 
+	int get_render_layer_instruction_size(lua_State* L){
+		int output = 0;
+
+		if(api_grafica != NULL){
+			output = api_grafica->info_render.size();
+		}
+		lua_pushnumber(L,output);
+		return 1;
+	}
+
+	int set_render_layer_instruction_size(lua_State* L){
+		int argumentos = lua_gettop(L);
+		if(argumentos == 1 && api_grafica != NULL){
+			api_grafica->info_render.resize((int)lua_tonumber(L,1));
+		}
+		return 0;
+	}
+
+	int get_render_layer_instruction(lua_State* L){
+		int argumentos = lua_gettop(L);
+		instrucoes_render_struct ir;
+		if(argumentos == 1){
+			ir = api_grafica->info_render[(int)lua_tonumber(L,1)];
+		}
+		lua_pushnumber(L,ir.camera);
+		lua_pushboolean(L,ir.iniciar_render);
+		lua_pushboolean(L,ir.limpar_buffer_cores);
+		lua_pushboolean(L,ir.limpar_buffer_profundidade);
+		lua_pushboolean(L,ir.desenhar_objetos);
+		lua_pushboolean(L,ir.terminar_render);
+		lua_pushboolean(L,ir.usar_profundidade);
+		return 7;
+	}
+
+	int set_render_layer_instruction(lua_State* L){
+		int argumentos = lua_gettop(L);
+		if(argumentos == 8){
+			instrucoes_render_struct ir;
+			ir.camera = (int)lua_tonumber(L,2);
+			ir.iniciar_render = (bool)lua_toboolean(L,3);
+			ir.limpar_buffer_cores = (bool)lua_toboolean(L,4);
+			ir.limpar_buffer_profundidade = (bool)lua_toboolean(L,5);
+			ir.desenhar_objetos = (bool)lua_toboolean(L,6);
+			ir.terminar_render = (bool)lua_toboolean(L,7);
+			ir.usar_profundidade = (bool)lua_toboolean(L,8);
+
+			api_grafica->info_render[(int)lua_tonumber(L,1)] = ir;
+
+		}
+		return 0;
+	}
+
 	int get_mesh_size(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		int output = 0;
@@ -1801,6 +1853,13 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("get_post_processing_texture", funcoes_ponte::get_post_processing_texture),
 		pair<string, int(*)(lua_State*)>("set_post_processing_input", funcoes_ponte::set_post_processing_input),
 		pair<string, int(*)(lua_State*)>("get_post_processing_input", funcoes_ponte::get_post_processing_input),
+
+		//camadas render
+		pair<string, int(*)(lua_State*)>("get_render_layer_instruction_size", funcoes_ponte::get_render_layer_instruction_size),
+		pair<string, int(*)(lua_State*)>("set_render_layer_instruction_size", funcoes_ponte::set_render_layer_instruction_size),
+		pair<string, int(*)(lua_State*)>("get_render_layer_instruction", funcoes_ponte::get_render_layer_instruction),
+		pair<string, int(*)(lua_State*)>("set_render_layer_instruction", funcoes_ponte::set_render_layer_instruction),
+
 
 		//janela
 		pair<string, int(*)(lua_State*)>("set_window", funcoes_ponte::set_window),

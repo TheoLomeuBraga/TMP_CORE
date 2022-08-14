@@ -310,7 +310,7 @@ public:
 		
 
 		struct instrucoes_render_struct {
-			int camera;
+			int camera = 0;
 			bool iniciar_render = true, limpar_buffer_cores = true, limpar_buffer_profundidade = true, desenhar_objetos = true, terminar_render = true,usar_profundidade = true;
 
 
