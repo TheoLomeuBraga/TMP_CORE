@@ -397,7 +397,8 @@ namespace Objetos {
 		public:
 		render_malha() {}
 		bool ligado = true;
-		bool gerar_oclusao = true;
+		lado_render_malha lado_render = lado_render_malha::front;
+		bool usar_oclusao = true;
 		float porcentagem_pode_ocupar_tela = 1;
 		uint8_t camada = 0;
 		map<string,float> shape_keys_state;

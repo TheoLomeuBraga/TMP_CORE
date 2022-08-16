@@ -533,6 +533,12 @@ public:
 			return ret;
 		}
 		
+		enum tipo_luz {
+			ponto = 0,
+			holofote = 1,
+			direcional = 2,
+		};
+
 #define NO_TEXTURAS 6
 #define NO_INPUTS 16
 		class Material{
@@ -580,6 +586,12 @@ public:
 					cout << "cor: " << v.cor[0] << ","<< v.cor[1] << ","<< v.cor[2] << endl;
 					cout << "}" << endl;
 				}
+
+				enum lado_render_malha{
+					front = 0,
+					back = 1,
+					both = 2,
+				};
 
 				class malha;
 				void remover_malha(malha* ma);

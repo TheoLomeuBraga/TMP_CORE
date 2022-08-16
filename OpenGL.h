@@ -215,7 +215,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			shared_ptr<Objetos::transform> tf = p.first->pegar_componente<Objetos::transform>();
 			shared_ptr<render_malha> rm = p.first->pegar_componente<render_malha>();
 
-			if(tf != NULL && rm != NULL && rm->gerar_oclusao){
+			if(tf != NULL && rm != NULL && rm->usar_oclusao){
 
 				unsigned int shader_s = pegar_shader("resources/Shaders/oclusion_querie");
 				glUseProgram(shader_s);
@@ -258,7 +258,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 		for (pair<shared_ptr<objeto_jogo>, unsigned int> p : oclusion_queries) {
 			glGetQueryObjectiv(p.second, GL_QUERY_RESULT, &oclusion_queries_resultados[p.first]);
 			//cout << "resultado querie: " << oclusion_queries_resultados[p.first] << endl;
-			if(p.first->pegar_componente<render_malha>()->gerar_oclusao){
+			if(p.first->pegar_componente<render_malha>()->usar_oclusao){
 				p.first->pegar_componente<render_malha>()->ligado = oclusion_queries_resultados[p.first] > 0;
 			}
 		}
@@ -1023,8 +1023,8 @@ typedef struct mesh_ogl_struct mesh_ogl;
 				shared_ptr<render_malha> RM = obj->pegar_componente<render_malha>();
 				if (RM != NULL && RM->minhas_malhas.size() > 0 && RM->ligado && RM->minhas_malhas.size() > 0 && RM->mats.size() > 0) {
 					criar_oclusion_querie(obj);
-					glEnable(GL_CULL_FACE);
-					glCullFace(GL_FRONT);
+
+
 					for(int i = 0; i < std::min((int)RM->mats.size(),(int)RM->minhas_malhas.size()); i++){
 
 						shared_ptr<malha> ma = RM->minhas_malhas[i];
@@ -1068,7 +1068,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 						}
 
 
-											//input
+						//input
 						for (int a = 0; a < NO_INPUTS; a++) {
 							string nome_veriavel = "inputs[";
 							nome_veriavel + to_string(a) + "]";
@@ -1077,6 +1077,23 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 						//reindenizar malha
 						//http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-9-vbo-indexing/
+
+						switch(RM->lado_render){
+						case lado_render_malha::both:
+							glDisable(GL_CULL_FACE);
+							break;
+
+						case lado_render_malha::front:
+							glEnable(GL_CULL_FACE);
+							glCullFace(GL_FRONT);
+							break;
+
+						case lado_render_malha::back:
+							glEnable(GL_CULL_FACE);
+							glCullFace(GL_BACK);
+							break;
+						}
+
 
 						selecionar_desenhar_malha(ma.get(),GL_TRIANGLES);
 
