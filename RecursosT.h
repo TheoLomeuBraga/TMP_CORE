@@ -294,7 +294,7 @@ public:
 		
 
 		
-
+		
 		
 
 
@@ -923,30 +923,7 @@ public:
 
 
 
-			string pegar_estencao_arquivo(string arquivo) {
-				string ret = arquivo;
-								for(int i = 0;i<arquivo.length();i++){
-									if(arquivo.at(i) != '.'){
-										ret.erase(ret.begin());
-									}else{
-										break;
-									}
-								}
-
-								return ret;
-			}
-			string pegar_pasta_arquivo(string arquivo) {
-				string ret = arquivo;
-				for(int i = arquivo.length() - 1;i>0;i--){
-					if(arquivo.at(i) != '/'){
-						ret.pop_back();
-					}else{
-						break;
-					}
-				}
-
-				return ret;
-			}
+			
 
 
 		
@@ -1034,6 +1011,34 @@ public:
 
 		 void setar_diretorio_aplicacao(string local) {
 			 std::filesystem::current_path(local);
+		 }
+
+		 string pegar_estencao_arquivo(string arquivo) {
+			 string ret = arquivo;
+			 for (int i = 0; i < arquivo.length(); i++) {
+				 if (arquivo.at(i) != '.') {
+					 ret.erase(ret.begin());
+				 }
+				 else {
+					 break;
+				 }
+			 }
+			 return ret;
+		 }
+		 string pegar_nome_arquivo(string arquivo) {
+			 return arquivo.substr(arquivo.find_last_of("/\\") + 1);
+		 }
+		 string pegar_pasta_arquivo(string arquivo) {
+			 string ret = arquivo;
+			 for (int i = arquivo.length() - 1; i > 0; i--) {
+				 if (arquivo.at(i) != '/') {
+					 ret.pop_back();
+				 }
+				 else {
+					 break;
+				 }
+			 }
+			 return ret;
 		 }
 
 		 class lista_ponteiros {

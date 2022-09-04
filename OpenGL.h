@@ -196,7 +196,65 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			}
 		}
 
+
+
 		shared_ptr<malha> oclusion_box;
+		
+
+
+		shared_ptr<Objetos::transform> teste_tf;
+		shared_ptr<objeto_jogo> teste_cam = NULL;
+		void iniciar_teste_tf_teste_cam() {
+			teste_tf = make_shared<Objetos::transform>(Objetos::transform(false, vec3(10, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1)));
+			teste_cam = novo_objeto_jogo();
+
+			//teste_cam->adicionar_componente<Objetos::camera>(Objetos::camera(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), 90, 1, 1, 0.01, 100));
+			teste_cam->adicionar_componente<Objetos::camera>(Objetos::camera(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), 10, 10, 0.01, 100));
+
+			teste_cam->adicionar_componente<Objetos::transform>(Objetos::transform(false, vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1)));
+			teste_cam->pegar_componente<Objetos::camera>()->paiTF = teste_cam->pegar_componente<Objetos::transform>().get();
+			teste_cam->pegar_componente<Objetos::camera>()->atualizar_tf();
+		}
+
+		void teste_desenhar_malha() {
+			if (teste_cam == NULL) {
+				iniciar_teste_tf_teste_cam();
+			}
+			teste_desenhar_malha(teste_tf, teste_cam);
+		}
+		void teste_desenhar_malha(shared_ptr<Objetos::transform> tf, shared_ptr<objeto_jogo> cam) {
+			
+			unsigned int shader_s = pegar_shader("resources/Shaders/teste_malha");
+			glUseProgram(shader_s);
+
+			//transform
+			glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
+			glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &tf->matrizTransform[0][0]);
+			glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
+			glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
+
+			for (int i = 0; i < 4; i++) {
+				glEnableVertexAttribArray(i);
+			}
+
+			//posição
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertice), reinterpret_cast<void*>(offsetof(vertice, posicao)));
+			//uv
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertice), reinterpret_cast<void*>(offsetof(vertice, uv)));
+			//normal
+			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(vertice), reinterpret_cast<void*>(offsetof(vertice, normal)));
+			//cor
+			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vertice), reinterpret_cast<void*>(offsetof(vertice, cor)));
+
+			glDisable(GL_CULL_FACE);
+			
+			glDrawElements(
+				GL_TRIANGLES,      // mode
+				malhas[oclusion_box.get()].tamanho_indice,    // count
+				GL_UNSIGNED_INT,   // type
+				(void*)0           // element array buffer offset
+			);
+		}
 
 	void criar_oclusion_querie(shared_ptr<objeto_jogo> obj) {
 		if (oclusion_queries.find(obj) == oclusion_queries.end()) {
@@ -217,35 +275,29 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 			if(tf != NULL && rm != NULL && rm->usar_oclusao){
 
+				
+				
+
+				
+				
+				glBeginQuery(GL_SAMPLES_PASSED, p.second);
 				unsigned int shader_s = pegar_shader("resources/Shaders/oclusion_querie");
 				glUseProgram(shader_s);
-
 				//transform
-				vec3 tamanho = vec3(0,0,0);
-				for(shared_ptr<malha> m : rm->minhas_malhas){
-					tamanho.x = std::max(tamanho.x,m->tamanho_maximo.x);
-					tamanho.y = std::max(tamanho.y,m->tamanho_maximo.y);
-					tamanho.z = std::max(tamanho.z,m->tamanho_maximo.z);
-
+				vec3 tamanho = vec3(0, 0, 0);
+				for (shared_ptr<malha> m : rm->minhas_malhas) {
+					tamanho.x = std::max<float>(tamanho.x, m->tamanho_maximo.x);
+					tamanho.y = std::max<float>(tamanho.y, m->tamanho_maximo.y);
+					tamanho.z = std::max<float>(tamanho.z, m->tamanho_maximo.z);
 				}
-				mat4 transform = scale(tf->matrizTransform,tamanho);
-				glUniform1i(glGetUniformLocation(shader_s, "ui"),tf->UI);
-				glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"),1, GL_FALSE,&transform[0][0]);
-				glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1,GL_FALSE,&cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
-				glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"),1, GL_FALSE,&cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
-
-
-
-
-
-
-				glDisable(GL_CULL_FACE);
-				glColorMask(false, false, false, false);
-				glBeginQuery(GL_SAMPLES_PASSED, p.second);
+				mat4 transform = scale(tf->matrizTransform, tamanho);
+				glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
+				glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &transform[0][0]);
+				glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
+				glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
 				selecionar_desenhar_malha_querie(oclusion_box.get());
 				glEndQuery (GL_SAMPLES_PASSED);
-				glColorMask(true, true, true, true);
-
+				
 
 			}
 
@@ -510,6 +562,8 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 		void selecionar_desenhar_malha_querie(malha *ma) {
 		if (malhas.find(ma) != malhas.end()) {
+			glDisable(GL_CULL_FACE);
+			glDisable(GL_DEPTH_TEST);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, malhas[ma].vbo);
 			glBindBuffer(GL_ARRAY_BUFFER, malhas[ma].malha_buffer);
 
@@ -521,13 +575,22 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertice),reinterpret_cast<void*>(offsetof(vertice, posicao)));
 
 			glDisable(GL_CULL_FACE);
-			glDrawElements(GL_TRIANGLES,      // mode
-					//GL_LINES,
-					//GL_POINTS,
+			glColorMask(false, false, false, false);
+			glDrawElements(
+				GL_TRIANGLES,      // mode
 					malhas[ma].tamanho_indice,    // count
 					GL_UNSIGNED_INT,   // type
 					(void*) 0           // element array buffer offset
 					);
+			if (usar_profundidade) {
+				glEnable(GL_DEPTH_TEST);
+			}
+			else {
+				glDisable(GL_DEPTH_TEST);
+			}
+			glColorMask(true, true, true, true);
+
+			
 		}
 	}
 
@@ -550,16 +613,21 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vertice),reinterpret_cast<void*>(offsetof(vertice, cor)));
 
 
-			glEnable(GL_CULL_FACE);
-			glDrawElements(tipo,      // mode
-				//GL_LINES,
-				//GL_POINTS,
+			
+			glDrawElements(
+				tipo,      // mode
 				malhas[ma].tamanho_indice,    // count
 				GL_UNSIGNED_INT,   // type
 				(void*) 0           // element array buffer offset
 				);
 			}
 		}
+
+		
+
+
+
+
 
 		void remover_malha(malha* ma){
 			if(malhas.find(ma) != malhas.end()){
@@ -573,7 +641,6 @@ typedef struct mesh_ogl_struct mesh_ogl;
 		void mudar_render_res(int X, int Y) {
 			glGenFramebuffers(1, &frame_buffer);
 			glViewport(0, 0, X, Y);
-			//cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:" << X << Y <<endl;
 		}
 
 
@@ -623,24 +690,28 @@ typedef struct mesh_ogl_struct mesh_ogl;
 		}
 
 		void reindenizar_objeto(shared_ptr<objeto_jogo> obj, shared_ptr<objeto_jogo> cam) {
-			//glUseProgram(pegar_shader("recursos/Shaders/padr�o"));
+			
 
-
+			
 
 
 			if (obj->pegar_componente<Objetos::transform>() != NULL && cam->pegar_componente<Objetos::transform>() != NULL && cam->pegar_componente<Objetos::camera>() != NULL) {
-				mat4 pvt;
+				
+				shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
 
-				glUniform1i(glGetUniformLocation(ShaderGL, "vert_mat.ui"), obj->pegar_componente<Objetos::transform>()->UI);
-				glUniformMatrix4fv(TF, 1, GL_FALSE, &obj->pegar_componente<Objetos::transform>()->matrizTransform[0][0]);
+
+
+
+
+				shared_ptr<Objetos::camera> ca = cam->pegar_componente<Objetos::camera>();
 
 
 
 
 				//render_shader
 				shared_ptr<render_shader> rs = obj->pegar_componente<render_shader>();
-				glDisable(GL_CULL_FACE);
 				if (rs != NULL) {
+					glDisable(GL_CULL_FACE);
 					//shader
 					unsigned int shader_s = pegar_shader(rs->mat.shad);
 					glUseProgram(shader_s);
@@ -679,10 +750,10 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					glUniform4f(glGetUniformLocation(shader_s, "uv_position_scale"), uv.x, uv.y, uv.z, uv.w);
 
 					//transform
-					glUniform1i(glGetUniformLocation(shader_s, "ui"), obj->pegar_componente<Objetos::transform>()->UI);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &obj->pegar_componente<Objetos::transform>()->matrizTransform[0][0]);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
+					glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &tf->matrizTransform[0][0]);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &ca->matrizVisao[0][0]);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &ca->matrizProjecao[0][0]);
 
 					//render
 					glBindVertexArray(quad_array);
@@ -703,10 +774,10 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					glUniform1i(glGetUniformLocation(shader_s, "shedow_mode"), 0);
 
 					//transform
-					glUniform1i(glGetUniformLocation(shader_s, "ui"), obj->pegar_componente<Objetos::transform>()->UI);
+					glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
 
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &ca->matrizVisao[0][0]);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &ca->matrizProjecao[0][0]);
 
 					//tempo
 					glUniform1f(glGetUniformLocation(shader_s, "tempo"), Tempo::tempo);
@@ -736,7 +807,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					}
 
 					string texto = rt->texto;
-					mat4 lugar_texto = obj->pegar_componente<Objetos::transform>()->matrizTransform;
+					mat4 lugar_texto = tf->matrizTransform;
 
 
 
@@ -839,7 +910,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					glUniform1f(glGetUniformLocation(shader_s, "tempo"), Tempo::tempo);
 
 					//transform
-					shared_ptr<Objetos::camera> ca = cam->pegar_componente<Objetos::camera>();
+					
 					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &ca->matrizVisao[0][0]);
 					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &ca->matrizProjecao[0][0]);
 
@@ -875,7 +946,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 
-					//if (checar_objeto_visivel(ca->matrizProjecao, ca->matrizVisao, obj->pegar_componente<Objetos::transform>()->matrizTransform, vertices_visao_render_tile_map)) {
+					
 
 					//para cada camada
 					if (rtm->apenas_camada == -1) {
@@ -888,7 +959,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 								//otimizar
 								bool visivel = true;
 								ivec3 local_tile_selecionado = vec3(b, 0, 0) * vec3(2, 0, 0);
-								mat4 mat_tile = translate(obj->pegar_componente<Objetos::transform>()->matrizTransform, (vec3)local_tile_selecionado);
+								mat4 mat_tile = translate(tf->matrizTransform, (vec3)local_tile_selecionado);
 								vec3 pos_tela = cam->pegar_componente<camera>()->matrizProjecao * cam->pegar_componente<camera>()->matrizVisao * mat_tile * vec4(0, 0, 0, 1);
 
 								float tacha_erro = 1.5f;
@@ -900,9 +971,9 @@ typedef struct mesh_ogl_struct mesh_ogl;
 									for (int c = 0; c < rtm->map_info->res.y; c++) {
 										int tile_id = rtm->map_info->info[a][(c * rtm->map_info->res.x) + b];
 
-										if (rtm->tiles->tiles[std::max(tile_id-1,0)].visivel ) {
+										if (rtm->tiles->tiles[std::max<float>(tile_id-1,0)].visivel ) {
 											ivec3 local_tile_selecionado = vec3(b, c, a);
-											mat4 mat_tile = translate(obj->pegar_componente<Objetos::transform>()->matrizTransform, (vec3)local_tile_selecionado * vec3(2, -2, -0.001));
+											mat4 mat_tile = translate(tf->matrizTransform, (vec3)local_tile_selecionado * vec3(2, -2, -0.001));
 											ivec2 quant_t = rtm->tiles->quant_tiles;
 											ivec2 tile_selecionado((tile_id % quant_t.x) - 1, (float)(int)tile_id / quant_t.x);
 
@@ -930,7 +1001,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 							//otimizar
 							bool visivel = true;
 							ivec3 local_tile_selecionado = vec3(b, 0, 0) * vec3(2, 0, 0);
-							mat4 mat_tile = translate(obj->pegar_componente<Objetos::transform>()->matrizTransform, (vec3)local_tile_selecionado);
+							mat4 mat_tile = translate(tf->matrizTransform, (vec3)local_tile_selecionado);
 							vec3 pos_tela = cam->pegar_componente<camera>()->matrizProjecao * cam->pegar_componente<camera>()->matrizVisao * mat_tile * vec4(0, 0, 0, 1);
 
 							float tacha_erro = 1.5f;
@@ -942,9 +1013,9 @@ typedef struct mesh_ogl_struct mesh_ogl;
 								for (int c = 0; c < rtm->map_info->res.y; c++) {
 									int tile_id = rtm->map_info->info[a][(c * rtm->map_info->res.x) + b];
 									//
-									if (tile_id != 0 && rtm->tiles->tiles[std::max(tile_id - 1, 0)].visivel) {
+									if (tile_id != 0 && rtm->tiles->tiles[std::max<float>(tile_id - 1, 0)].visivel) {
 										ivec3 local_tile_selecionado = vec3(b, c, a);
-										mat4 mat_tile = translate(obj->pegar_componente<Objetos::transform>()->matrizTransform, (vec3)local_tile_selecionado * vec3(2, -2, -0.001));
+										mat4 mat_tile = translate(tf->matrizTransform, (vec3)local_tile_selecionado * vec3(2, -2, -0.001));
 										ivec2 quant_t = rtm->tiles->quant_tiles;
 										ivec2 tile_selecionado((tile_id % quant_t.x) - 1, (float)(int)tile_id / quant_t.x);
 
@@ -1004,10 +1075,10 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					);
 
 					//transform
-					glUniform1i(glGetUniformLocation(shader_s, "ui"), obj->pegar_componente<Objetos::transform>()->UI);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &obj->pegar_componente<Objetos::transform>()->matrizTransform[0][0]);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
-					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
+					glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &tf->matrizTransform[0][0]);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &ca->matrizVisao[0][0]);
+					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &ca->matrizProjecao[0][0]);
 
 					//render
 					glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1020,12 +1091,24 @@ typedef struct mesh_ogl_struct mesh_ogl;
 				//map<shared_ptr<objeto_jogo>,unsigned int> oclusion_queries;
 
 				//render_malha
+				
 				shared_ptr<render_malha> RM = obj->pegar_componente<render_malha>();
+				
+				
 				if (RM != NULL && RM->minhas_malhas.size() > 0 && RM->ligado && RM->minhas_malhas.size() > 0 && RM->mats.size() > 0) {
+
+					//iniciar_teste_tf_teste_cam();
+					//teste_desenhar_malha(teste_tf, cam);
+					
+
+					//vec3 p = tf->pegar_pos_global(), r = tf->pegar_graus_global();
+					//cout << "Pos{ " << p.x << " ," << p.y << " ," << p.z << "} Rot{ " << r.x << " ," << r.y << " ," << r.z << "} Sca{ " << tf->esca.x << " ," << tf->esca.y << " ," << tf->esca.z << "}" << endl;
+
 					criar_oclusion_querie(obj);
 
 
-					for(int i = 0; i < std::min((int)RM->mats.size(),(int)RM->minhas_malhas.size()); i++){
+					for(int i = 0; i < std::min<float>((int)RM->mats.size(),(int)RM->minhas_malhas.size()); i++){
+						
 
 						shared_ptr<malha> ma = RM->minhas_malhas[i];
 						Material mat = RM->mats[i];
@@ -1036,12 +1119,6 @@ typedef struct mesh_ogl_struct mesh_ogl;
 						//aplicar material
 						unsigned int shader_s = pegar_shader(mat.shad);
 						glUseProgram(shader_s);
-
-						//transform
-						glUniform1i(glGetUniformLocation(shader_s, "ui"), obj->pegar_componente<Objetos::transform>()->UI);
-						glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &obj->pegar_componente<Objetos::transform>()->matrizTransform[0][0]);
-						glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
-						glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
 
 						//tempo
 						glUniform1f(glGetUniformLocation(shader_s, "time"), Tempo::tempo);
@@ -1056,7 +1133,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 						//texturas
-						for (int a = 0; a < NO_TEXTURAS;a++) {
+						for (int a = 0; a < NO_TEXTURAS; a++) {
 							if (RM->mats[i].texturas[a] != NULL) {
 								ogl_adicionar_textura(RM->mats[i].texturas[a].get());
 								glActiveTexture(GL_TEXTURE0 + a);
@@ -1078,7 +1155,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 						//reindenizar malha
 						//http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-9-vbo-indexing/
 
-						switch(RM->lado_render){
+						switch (RM->lado_render) {
 						case lado_render_malha::both:
 							glDisable(GL_CULL_FACE);
 							break;
@@ -1094,16 +1171,29 @@ typedef struct mesh_ogl_struct mesh_ogl;
 							break;
 						}
 
+						//transform
+						
+						glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
+						glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &tf->matrizTransform[0][0]);
+						glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &ca->matrizVisao[0][0]);
+						glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &ca->matrizProjecao[0][0]);
+						
+
+						
+						
+
+						
+
 
 						selecionar_desenhar_malha(ma.get(),GL_TRIANGLES);
-
-
-
-						 //glDrawArrays(GL_TRIANGLES, 0, 6);
-
+						
+						
 
 						}
 					}
+				
+					
+				
 				}
 
 
@@ -1112,11 +1202,13 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 
-		void reindenizar_camada_objetos(vector<int> obj, int cam) {
+		void reindenizar_camada_objetos(vector<shared_ptr<objeto_jogo>> obj, shared_ptr<objeto_jogo> cam) {
+			
+			
 
 
 			glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
-			id_camera = cam;
+			
 
 
 			if (limpar_cor) {
@@ -1154,12 +1246,16 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			}
 			glViewport(0, 0, (int)configuracoes::janelaConfig.X * res_dinamica, (int)configuracoes::janelaConfig.Y * res_dinamica);
 
-			glUniformMatrix4fv(VIS, 1, GL_FALSE, &Objetos::cena_objetos_selecionados->lista_objetos[cam]->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
-			glUniformMatrix4fv(PROJ, 1, GL_FALSE, &Objetos::cena_objetos_selecionados->lista_objetos[cam]->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
+			
 
 			for (int i = 0; i < obj.size(); i++) {
 				if (obj[i] > 0 && cam > 0) {
-					reindenizar_objeto(Objetos::cena_objetos_selecionados->lista_objetos[obj[i]], Objetos::cena_objetos_selecionados->lista_objetos[cam]);
+					//iniciar_teste_tf_teste_cam();
+					//teste_desenhar_malha(teste_tf, cam);
+					//teste_desenhar_malha(obj[i]->pegar_componente<Objetos::transform>(), cam);
+
+					reindenizar_objeto(obj[i], cam);
+					
 				}
 			}
 
@@ -1313,22 +1409,21 @@ typedef struct mesh_ogl_struct mesh_ogl;
 			glDepthFunc(GL_LESS);
 
 
-			for (int a = 0; a < std::min(info_render.size(), cena_objetos_selecionados->objetos_camadas_render.size()); a++) {
-				instrucoes_render info = info_render[a];
+			for (int a = 0; a < std::min<float>(info_render.size(), cena_objetos_selecionados->objetos_camadas_render.size()); a++) {
 
-				if (info.iniciar_render) {
+				if (info_render[a].iniciar_render) {
 					ogl_iniciar_frame();
 				}
-				if (info.limpar_buffer_cores) {
+				if (info_render[a].limpar_buffer_cores) {
 					limpar_cor = true;
 					glClear(GL_COLOR_BUFFER_BIT);
 				}
-				if (info.limpar_buffer_profundidade) {
+				if (info_render[a].limpar_buffer_profundidade) {
 					limpar_profundidade = true;
 					glClear(GL_DEPTH_BUFFER_BIT);
 				}
 
-				if (info.usar_profundidade) {
+				if (info_render[a].usar_profundidade) {
 					usar_profundidade = true;
 					glEnable(GL_DEPTH_TEST);
 					glDepthFunc(GL_LESS);
@@ -1338,23 +1433,24 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					glDisable(GL_DEPTH_TEST);
 				}
 
-				if (info.desenhar_objetos) {
+				if (info_render[a].desenhar_objetos) {
 					if (Objetos::cena_objetos_selecionados->cameras.size() >= relevancia_camera + 1 && Objetos::cena_objetos_selecionados->cameras[relevancia_camera] != NULL) {
 						reindenizar_camada_objetos(Objetos::cena_objetos_selecionados->objetos_camadas_render[a], Objetos::cena_objetos_selecionados->cameras[relevancia_camera]);
+						
 					}
 					else {
 						escrever("erro camera faltando");
 					}
 				}
 
-				rodar_oclusion_queries(Objetos::cena_objetos_selecionados->lista_objetos[Objetos::cena_objetos_selecionados->cameras[relevancia_camera]]);
+				
+				rodar_oclusion_queries(Objetos::cena_objetos_selecionados->cameras[relevancia_camera]);
 
-
-				if (info.terminar_render) {
+				if (info_render[a].terminar_render) {
 					ogl_aplicar_pos_processamento();
 				}
 
-
+				
 
 
 

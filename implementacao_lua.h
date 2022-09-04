@@ -71,9 +71,9 @@ namespace funcoes_ponte {
 		lua_pushinteger(L, ret);
 		return ret;
 	}
-	
+
 	//screen
-	int set_window(lua_State* L){
+	int set_window(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		if (argumentos == 3) {
 			loop_principal::mudar_res((int)lua_tonumber(L, 1), (int)lua_tonumber(L, 2));
@@ -115,15 +115,15 @@ namespace funcoes_ponte {
 	int create_object(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		shared_ptr<objeto_jogo> obj = novo_objeto_jogo();
-		if(argumentos == 0 ){ 
+		if (argumentos == 0) {
 			Objetos::cena_objetos_selecionados->adicionar_objeto(obj);
 		}
-		else if(argumentos == 1){ 
-			Objetos::cena_objetos_selecionados->adicionar_objeto(string_ponteiro<objeto_jogo>(lua_tostring(L, 1)),obj);
+		else if (argumentos == 1) {
+			Objetos::cena_objetos_selecionados->adicionar_objeto(string_ponteiro<objeto_jogo>(lua_tostring(L, 1)), obj);
 		}
 
-		
-		lua_pushstring(L,ponteiro_string<objeto_jogo>(obj.get()).c_str());
+
+		lua_pushstring(L, ponteiro_string<objeto_jogo>(obj.get()).c_str());
 		return 1;
 	}
 
@@ -134,7 +134,7 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 			obj->excluir();
 		}
-		
+
 		return 0;
 	}
 
@@ -178,7 +178,7 @@ namespace funcoes_ponte {
 		lua_pushnumber(L, output);
 		return 1;
 	}
-	
+
 	int get_children(lua_State* L) {
 		string output = "";
 		int argumentos = lua_gettop(L);
@@ -187,7 +187,7 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 2 && obj != NULL) {
-			output = ponteiro_string(obj->filhos[(int)lua_tonumber(L,2)].get());
+			output = ponteiro_string(obj->filhos[(int)lua_tonumber(L, 2)].get());
 		}
 
 		lua_pushstring(L, output.c_str());
@@ -269,8 +269,8 @@ namespace funcoes_ponte {
 		tile output;
 		int argumentos = lua_gettop(L);
 
-		
-		
+
+
 		if (argumentos == 3 && (int)lua_tonumber(L, 3) > 0 && lua_tonumber(L, 3) < ManuseioDados::carregar_tile_set(lua_tostring(L, 1))->tiles.size()) {
 			output = ManuseioDados::carregar_tile_set(lua_tostring(L, 1))->tiles[(int)lua_tonumber(L, 3)];
 		}
@@ -311,7 +311,7 @@ namespace funcoes_ponte {
 		int argumentos = lua_gettop(L);
 		int output = 0;
 		if (argumentos == 3) {
-			output = ManuseioDados::carregar_info_tile_map(lua_tostring(L, 1))->info[lua_tonumber(L,2)][lua_tonumber(L, 3)];
+			output = ManuseioDados::carregar_info_tile_map(lua_tostring(L, 1))->info[lua_tonumber(L, 2)][lua_tonumber(L, 3)];
 		}
 		lua_pushnumber(L, output);
 		return 1;
@@ -321,11 +321,11 @@ namespace funcoes_ponte {
 
 	int get_input(lua_State* L) {
 		//http://gamedevgeek.com/tutorials/calling-c-functions-from-lua/
-		
-		
+
+
 		int argumentos = lua_gettop(L);
 
-		string input1 = lua_tostring(L,1);
+		string input1 = lua_tostring(L, 1);
 		string input2 = lua_tostring(L, 2);
 		float output = 0;
 
@@ -419,9 +419,9 @@ namespace funcoes_ponte {
 
 			}
 		}
-		
-		
-		
+
+
+
 		lua_pushnumber(L, output);
 
 		return 1;
@@ -459,7 +459,7 @@ namespace funcoes_ponte {
 				output = fc->teto;
 			}
 		}
-		
+
 		lua_pushboolean(L, output);
 		return 1;
 	}
@@ -481,7 +481,7 @@ namespace funcoes_ponte {
 		lua_pushboolean(L, output);
 		return 1;
 	}
-	
+
 	//gravity
 
 	int get_gravity(lua_State* L) {
@@ -498,7 +498,7 @@ namespace funcoes_ponte {
 		}
 		return 0;
 	}
-	
+
 	//transform
 
 	int get_is_ui(lua_State* L) {
@@ -534,7 +534,7 @@ namespace funcoes_ponte {
 	}
 
 	int get_position(lua_State* L) {
-		vec3 output = vec3(0,0,0);
+		vec3 output = vec3(0, 0, 0);
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
@@ -605,7 +605,7 @@ namespace funcoes_ponte {
 		if (argumentos == 4 && obj != NULL) {
 			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
 			if (tf != NULL) {
-				output = tf->pegar_direcao_local(vec3(lua_tonumber(L,2), lua_tonumber(L,3), lua_tonumber(L,4)));
+				output = tf->pegar_direcao_local(vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4)));
 			}
 		}
 
@@ -715,9 +715,9 @@ namespace funcoes_ponte {
 		return 0;
 	}
 
-	
 
-	
+
+
 
 	//sprite render
 
@@ -784,7 +784,7 @@ namespace funcoes_ponte {
 
 	//render tilemap
 
-	
+
 	int get_tilemap(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		string output = "";
@@ -828,7 +828,7 @@ namespace funcoes_ponte {
 
 	int set_render_only_tilemap_layer(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		
+
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
@@ -869,7 +869,7 @@ namespace funcoes_ponte {
 		return 0;
 	}
 
-	int set_text(lua_State* L){
+	int set_text(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
@@ -881,7 +881,7 @@ namespace funcoes_ponte {
 		return 0;
 	}
 
-	int get_text(lua_State* L){
+	int get_text(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		string output = "";
@@ -891,7 +891,7 @@ namespace funcoes_ponte {
 		if (obj->pegar_componente<render_texto>() != NULL) {
 			output = obj->pegar_componente<render_texto>()->texto;
 		}
-		lua_pushstring(L,output.c_str());
+		lua_pushstring(L, output.c_str());
 		return 1;
 	}
 
@@ -936,7 +936,7 @@ namespace funcoes_ponte {
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		
+
 		if (argumentos == 8 && obj != NULL) {
 			shared_ptr < box_2D> b2d = obj->pegar_componente<box_2D>();
 			if (b2d != NULL) {
@@ -952,7 +952,7 @@ namespace funcoes_ponte {
 		return 0;
 	}
 
-	int get_physic_layer(lua_State* L) { 
+	int get_physic_layer(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		float output;
 		objeto_jogo* obj = NULL;
@@ -969,11 +969,11 @@ namespace funcoes_ponte {
 
 
 		lua_pushnumber(L, output);
-		
+
 		return 1;
 	}
 
-	int set_physic_layer(lua_State* L) { 
+	int set_physic_layer(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
@@ -986,7 +986,7 @@ namespace funcoes_ponte {
 				b2d->camada.camada = lua_tonumber(L, 2);
 			}
 		}
-		return 0; 
+		return 0;
 	}
 
 	int get_layers_can_colide_size(lua_State* L) {
@@ -1036,7 +1036,7 @@ namespace funcoes_ponte {
 		if (argumentos == 2 && obj != NULL) {
 			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
 			if (b2d != NULL) {
-				output = b2d->camada.camada_colide[lua_tonumber(L,2)];
+				output = b2d->camada.camada_colide[lua_tonumber(L, 2)];
 			}
 		}
 
@@ -1072,7 +1072,7 @@ namespace funcoes_ponte {
 		if (argumentos == 3 && obj != NULL) {
 			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
 			if (b2d != NULL) {
-				b2d->adicionar_forca(vec2(lua_tonumber(L,2), lua_tonumber(L, 3)));
+				b2d->adicionar_forca(vec2(lua_tonumber(L, 2), lua_tonumber(L, 3)));
 			}
 		}
 		return 0;
@@ -1123,15 +1123,15 @@ namespace funcoes_ponte {
 
 		if (obj->pegar_componente<camera>() != NULL) {
 			if (argumentos == 5) {
-				obj->pegar_componente<camera>()->configurar_camera(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 0, 0.0f), vec3(0, 1, 0),lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5));
+				obj->pegar_componente<camera>()->configurar_camera(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), (float)lua_tonumber(L, 2), (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4), (float)lua_tonumber(L, 5));
 			}
 			else if (argumentos == 6) {
-				obj->pegar_componente<camera>()->configurar_camera(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 0, 0.0f), vec3(0, 1, 0), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+				obj->pegar_componente<camera>()->configurar_camera(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), (float)lua_tonumber(L, 2), (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4), (float)lua_tonumber(L, 5), (float)lua_tonumber(L, 6));
 			}
 		}
 
 
-		
+
 		return 0;
 	}
 
@@ -1143,7 +1143,7 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (obj != NULL) {
-			
+
 			shared_ptr<camera> cam = obj->pegar_componente<camera>();
 			if (cam != NULL) {
 				if (cam->ortografica) {
@@ -1166,22 +1166,22 @@ namespace funcoes_ponte {
 			}
 		}
 
-		return ret ;
+		return ret;
 	}
 
 	//audio
 
-	int set_audio(lua_State* L){
+	int set_audio(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		
+
 		if (obj->pegar_componente<sfml_audio>() != NULL && argumentos == 7) {
 
 			audio_info* info = &obj->pegar_componente<sfml_audio>()->info;
-			info->nome = lua_tostring(L,2);
+			info->nome = lua_tostring(L, 2);
 			info->pausa = lua_toboolean(L, 3);
 			info->loop = lua_toboolean(L, 4);
 			info->tempo = lua_tonumber(L, 5);
@@ -1205,7 +1205,7 @@ namespace funcoes_ponte {
 		}
 		if (obj->pegar_componente<sfml_audio>() != NULL && argumentos == 1) {
 			output = obj->pegar_componente<sfml_audio>()->info;
-			
+
 		}
 		lua_pushfstring(L, output.nome.c_str());
 		lua_pushboolean(L, output.pausa);
@@ -1218,7 +1218,7 @@ namespace funcoes_ponte {
 
 	//geral render
 
-	
+
 
 	int set_render_layer(lua_State* L) {
 		int argumentos = lua_gettop(L);
@@ -1262,8 +1262,8 @@ namespace funcoes_ponte {
 				output = obj->pegar_componente<render_tilemap>()->camada;
 			}
 			if (obj->pegar_componente<render_malha>() != NULL) {
-							output = obj->pegar_componente<render_malha>()->camada;
-						}
+				output = obj->pegar_componente<render_malha>()->camada;
+			}
 		}
 		lua_pushnumber(L, output);
 		return 1;
@@ -1278,21 +1278,21 @@ namespace funcoes_ponte {
 		}
 		if (argumentos == 3) {
 
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					obj->pegar_componente<render_sprite>()->mat.shad = lua_tostring(L, 3);
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					obj->pegar_componente<render_texto>()->mat.shad = lua_tostring(L, 3);
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					obj->pegar_componente<render_tilemap>()->mat.shad = lua_tostring(L, 3);
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					obj->pegar_componente<render_shader>()->mat.shad = lua_tostring(L, 3);
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].shad = lua_tostring(L, 3);
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				obj->pegar_componente<render_sprite>()->mat.shad = lua_tostring(L, 3);
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				obj->pegar_componente<render_texto>()->mat.shad = lua_tostring(L, 3);
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				obj->pegar_componente<render_tilemap>()->mat.shad = lua_tostring(L, 3);
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				obj->pegar_componente<render_shader>()->mat.shad = lua_tostring(L, 3);
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].shad = lua_tostring(L, 3);
+			}
 
 		}
 		return 0;
@@ -1307,21 +1307,21 @@ namespace funcoes_ponte {
 		}
 		if (argumentos == 2) {
 
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					output = obj->pegar_componente<render_sprite>()->mat.shad;
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					output = obj->pegar_componente<render_texto>()->mat.shad;
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					output = obj->pegar_componente<render_tilemap>()->mat.shad;
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					output = obj->pegar_componente<render_shader>()->mat.shad;
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].shad;
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				output = obj->pegar_componente<render_sprite>()->mat.shad;
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				output = obj->pegar_componente<render_texto>()->mat.shad;
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				output = obj->pegar_componente<render_tilemap>()->mat.shad;
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				output = obj->pegar_componente<render_shader>()->mat.shad;
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].shad;
+			}
 
 		}
 
@@ -1340,21 +1340,21 @@ namespace funcoes_ponte {
 		}
 		if (argumentos == 2) {
 
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					output = obj->pegar_componente<render_sprite>()->mat.cor;
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					output = obj->pegar_componente<render_texto>()->mat.cor;
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					output = obj->pegar_componente<render_tilemap>()->mat.cor;
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					output = obj->pegar_componente<render_shader>()->mat.cor;
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].cor;
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				output = obj->pegar_componente<render_sprite>()->mat.cor;
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				output = obj->pegar_componente<render_texto>()->mat.cor;
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				output = obj->pegar_componente<render_tilemap>()->mat.cor;
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				output = obj->pegar_componente<render_shader>()->mat.cor;
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].cor;
+			}
 
 		}
 		lua_pushnumber(L, output.x);
@@ -1372,21 +1372,21 @@ namespace funcoes_ponte {
 		}
 		if (argumentos == 6) {
 
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					obj->pegar_componente<render_sprite>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					obj->pegar_componente<render_texto>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					obj->pegar_componente<render_tilemap>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					obj->pegar_componente<render_shader>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				obj->pegar_componente<render_sprite>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				obj->pegar_componente<render_texto>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				obj->pegar_componente<render_tilemap>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				obj->pegar_componente<render_shader>()->mat.cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].cor = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
 
 		}
 		return 0;
@@ -1400,21 +1400,21 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 2) {
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					output = obj->pegar_componente<render_sprite>()->mat.uv_pos_sca;
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					output = obj->pegar_componente<render_texto>()->mat.uv_pos_sca;
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					output = obj->pegar_componente<render_tilemap>()->mat.uv_pos_sca;
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					output = obj->pegar_componente<render_shader>()->mat.uv_pos_sca;
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].uv_pos_sca;
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				output = obj->pegar_componente<render_sprite>()->mat.uv_pos_sca;
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				output = obj->pegar_componente<render_texto>()->mat.uv_pos_sca;
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				output = obj->pegar_componente<render_tilemap>()->mat.uv_pos_sca;
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				output = obj->pegar_componente<render_shader>()->mat.uv_pos_sca;
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].uv_pos_sca;
+			}
 
 		}
 		lua_pushnumber(L, output.x);
@@ -1431,21 +1431,21 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 6) {
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					obj->pegar_componente<render_sprite>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					obj->pegar_componente<render_texto>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					obj->pegar_componente<render_tilemap>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					obj->pegar_componente<render_shader>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				obj->pegar_componente<render_sprite>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				obj->pegar_componente<render_texto>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				obj->pegar_componente<render_tilemap>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				obj->pegar_componente<render_shader>()->mat.uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].uv_pos_sca = vec4(lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+			}
 
 		}
 		return 0;
@@ -1463,21 +1463,21 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 4) {
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_sprite>()->mat.texturas[(int)lua_tonumber(L, 3)]);
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_texto>()->mat.texturas[(int)lua_tonumber(L, 3)]);
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_tilemap>()->mat.texturas[(int)lua_tonumber(L, 3)]);
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)]);
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].texturas[(int)lua_tonumber(L, 3)]);
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_sprite>()->mat.texturas[(int)lua_tonumber(L, 3)]);
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_texto>()->mat.texturas[(int)lua_tonumber(L, 3)]);
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_tilemap>()->mat.texturas[(int)lua_tonumber(L, 3)]);
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)]);
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 4), &obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].texturas[(int)lua_tonumber(L, 3)]);
+			}
 
 		}
 
@@ -1492,21 +1492,21 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 3) {
-				if (obj->pegar_componente<render_sprite>() != NULL && obj->pegar_componente<render_sprite>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
-					output = obj->pegar_componente<render_sprite>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
-				}
-				if (obj->pegar_componente<render_texto>() != NULL && obj->pegar_componente<render_texto>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
-					output = obj->pegar_componente<render_texto>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL && obj->pegar_componente<render_tilemap>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
-					output = obj->pegar_componente<render_tilemap>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
-				}
-				if (obj->pegar_componente<render_shader>() != NULL && obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
-					output = obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
-				}
-				if (obj->pegar_componente<render_malha>() != NULL && obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
-									output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].texturas[(int)lua_tonumber(L, 3)]->local;
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL && obj->pegar_componente<render_sprite>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
+				output = obj->pegar_componente<render_sprite>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
+			}
+			if (obj->pegar_componente<render_texto>() != NULL && obj->pegar_componente<render_texto>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
+				output = obj->pegar_componente<render_texto>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL && obj->pegar_componente<render_tilemap>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
+				output = obj->pegar_componente<render_tilemap>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
+			}
+			if (obj->pegar_componente<render_shader>() != NULL && obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
+				output = obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)]->local;
+			}
+			if (obj->pegar_componente<render_malha>() != NULL && obj->pegar_componente<render_shader>()->mat.texturas[(int)lua_tonumber(L, 3)] != NULL) {
+				output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].texturas[(int)lua_tonumber(L, 3)]->local;
+			}
 
 		}
 		lua_pushstring(L, output.c_str());
@@ -1525,21 +1525,21 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 4) {
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					obj->pegar_componente<render_sprite>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					obj->pegar_componente<render_texto>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					obj->pegar_componente<render_tilemap>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					obj->pegar_componente<render_shader>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				obj->pegar_componente<render_sprite>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				obj->pegar_componente<render_texto>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				obj->pegar_componente<render_tilemap>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				obj->pegar_componente<render_shader>()->mat.inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].inputs[(int)lua_tonumber(L, 3)] = lua_tonumber(L, 4);
+			}
 
 		}
 
@@ -1554,21 +1554,21 @@ namespace funcoes_ponte {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
 		if (argumentos == 3) {
-				if (obj->pegar_componente<render_sprite>() != NULL) {
-					output = obj->pegar_componente<render_sprite>()->mat.inputs[(int)lua_tonumber(L, 3)];
-				}
-				if (obj->pegar_componente<render_texto>() != NULL) {
-					output = obj->pegar_componente<render_texto>()->mat.inputs[(int)lua_tonumber(L, 3)];
-				}
-				if (obj->pegar_componente<render_tilemap>() != NULL) {
-					output = obj->pegar_componente<render_tilemap>()->mat.inputs[(int)lua_tonumber(L, 3)];
-				}
-				if (obj->pegar_componente<render_shader>() != NULL) {
-					output = obj->pegar_componente<render_shader>()->mat.inputs[(int)lua_tonumber(L, 3)];
-				}
-				if (obj->pegar_componente<render_malha>() != NULL) {
-									output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].inputs[(int)lua_tonumber(L, 3)];
-								}
+			if (obj->pegar_componente<render_sprite>() != NULL) {
+				output = obj->pegar_componente<render_sprite>()->mat.inputs[(int)lua_tonumber(L, 3)];
+			}
+			if (obj->pegar_componente<render_texto>() != NULL) {
+				output = obj->pegar_componente<render_texto>()->mat.inputs[(int)lua_tonumber(L, 3)];
+			}
+			if (obj->pegar_componente<render_tilemap>() != NULL) {
+				output = obj->pegar_componente<render_tilemap>()->mat.inputs[(int)lua_tonumber(L, 3)];
+			}
+			if (obj->pegar_componente<render_shader>() != NULL) {
+				output = obj->pegar_componente<render_shader>()->mat.inputs[(int)lua_tonumber(L, 3)];
+			}
+			if (obj->pegar_componente<render_malha>() != NULL) {
+				output = obj->pegar_componente<render_malha>()->mats[(int)lua_tonumber(L, 2)].inputs[(int)lua_tonumber(L, 3)];
+			}
 
 		}
 		lua_pushnumber(L, output);
@@ -1577,12 +1577,12 @@ namespace funcoes_ponte {
 
 
 
-//post_processing
-	//api_grafica->pos_processamento_info
+	//post_processing
+		//api_grafica->pos_processamento_info
 	int set_post_processing_shader(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(api_grafica != NULL && argumentos == 1){
-			api_grafica->pos_processamento_info.shad = lua_tostring(L,1);
+		if (api_grafica != NULL && argumentos == 1) {
+			api_grafica->pos_processamento_info.shad = lua_tostring(L, 1);
 		}
 		return 0;
 	}
@@ -1590,7 +1590,7 @@ namespace funcoes_ponte {
 	int get_post_processing_shader(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		string output = "";
-		if(api_grafica != NULL){
+		if (api_grafica != NULL) {
 			output = api_grafica->pos_processamento_info.shad;
 		}
 		lua_pushstring(L, output.c_str());
@@ -1600,20 +1600,20 @@ namespace funcoes_ponte {
 	int get_post_processing_color(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		vec4 output;
-		if(api_grafica != NULL){
+		if (api_grafica != NULL) {
 			output = api_grafica->pos_processamento_info.cor;
 		}
-		lua_pushnumber(L,output.x);
-		lua_pushnumber(L,output.y);
-		lua_pushnumber(L,output.z);
-		lua_pushnumber(L,output.w);
+		lua_pushnumber(L, output.x);
+		lua_pushnumber(L, output.y);
+		lua_pushnumber(L, output.z);
+		lua_pushnumber(L, output.w);
 		return 4;
 	}
 
 	int set_post_processing_color(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(api_grafica != NULL && argumentos == 4){
-			api_grafica->pos_processamento_info.cor = vec4(lua_tonumber(L,1),lua_tonumber(L,2),lua_tonumber(L,3),lua_tonumber(L,4));
+		if (api_grafica != NULL && argumentos == 4) {
+			api_grafica->pos_processamento_info.cor = vec4(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
 		}
 		return 0;
 	}
@@ -1621,28 +1621,28 @@ namespace funcoes_ponte {
 	int get_post_processing_position_scale(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		vec4 output;
-		if(api_grafica != NULL){
+		if (api_grafica != NULL) {
 			output = api_grafica->pos_processamento_info.uv_pos_sca;
 		}
-		lua_pushnumber(L,output.x);
-		lua_pushnumber(L,output.y);
-		lua_pushnumber(L,output.z);
-		lua_pushnumber(L,output.w);
+		lua_pushnumber(L, output.x);
+		lua_pushnumber(L, output.y);
+		lua_pushnumber(L, output.z);
+		lua_pushnumber(L, output.w);
 		return 4;
 	}
 
 	int set_post_processing_position_scale(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(api_grafica != NULL && argumentos == 4){
-			api_grafica->pos_processamento_info.uv_pos_sca = vec4(lua_tonumber(L,1),lua_tonumber(L,2),lua_tonumber(L,3),lua_tonumber(L,4));
+		if (api_grafica != NULL && argumentos == 4) {
+			api_grafica->pos_processamento_info.uv_pos_sca = vec4(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
 		}
 		return 0;
 	}
 
 	int set_post_processing_texture(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(api_grafica != NULL && argumentos == 2){
-			ManuseioDados::carregar_Imagem_thread(lua_tostring(L,2),&api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L,1)]);
+		if (api_grafica != NULL && argumentos == 2) {
+			ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 2), &api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)]);
 		}
 		return 0;
 	}
@@ -1650,17 +1650,17 @@ namespace funcoes_ponte {
 	int get_post_processing_texture(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		string output = "";
-		if(api_grafica != NULL && argumentos == 1 && api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)] != NULL){
+		if (api_grafica != NULL && argumentos == 1 && api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)] != NULL) {
 			output = api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)]->local;
 		}
-		lua_pushstring(L,output.c_str());
+		lua_pushstring(L, output.c_str());
 		return 1;
 	}
 
 	int set_post_processing_input(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(api_grafica != NULL && argumentos == 2){
-			api_grafica->pos_processamento_info.inputs[(int)lua_tonumber(L,1)] = lua_tonumber(L,2);
+		if (api_grafica != NULL && argumentos == 2) {
+			api_grafica->pos_processamento_info.inputs[(int)lua_tonumber(L, 1)] = lua_tonumber(L, 2);
 		}
 		return 0;
 	}
@@ -1668,60 +1668,60 @@ namespace funcoes_ponte {
 	int get_post_processing_input(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		float output = 0;
-		if(api_grafica != NULL && argumentos == 1){
+		if (api_grafica != NULL && argumentos == 1) {
 			output = api_grafica->pos_processamento_info.inputs[(int)lua_tonumber(L, 1)];
 		}
-		lua_pushnumber(L,output);
+		lua_pushnumber(L, output);
 		return 1;
 	}
 
-	int get_render_layer_instruction_size(lua_State* L){
+	int get_render_layer_instruction_size(lua_State* L) {
 		int output = 0;
 
-		if(api_grafica != NULL){
+		if (api_grafica != NULL) {
 			output = api_grafica->info_render.size();
 		}
-		lua_pushnumber(L,output);
+		lua_pushnumber(L, output);
 		return 1;
 	}
 
-	int set_render_layer_instruction_size(lua_State* L){
+	int set_render_layer_instruction_size(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(argumentos == 1 && api_grafica != NULL){
-			api_grafica->info_render.resize((int)lua_tonumber(L,1));
+		if (argumentos == 1 && api_grafica != NULL) {
+			api_grafica->info_render.resize((int)lua_tonumber(L, 1));
 		}
 		return 0;
 	}
 
-	int get_render_layer_instruction(lua_State* L){
+	int get_render_layer_instruction(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		instrucoes_render_struct ir;
-		if(argumentos == 1){
-			ir = api_grafica->info_render[(int)lua_tonumber(L,1)];
+		if (argumentos == 1) {
+			ir = api_grafica->info_render[(int)lua_tonumber(L, 1)];
 		}
-		lua_pushnumber(L,ir.camera);
-		lua_pushboolean(L,ir.iniciar_render);
-		lua_pushboolean(L,ir.limpar_buffer_cores);
-		lua_pushboolean(L,ir.limpar_buffer_profundidade);
-		lua_pushboolean(L,ir.desenhar_objetos);
-		lua_pushboolean(L,ir.terminar_render);
-		lua_pushboolean(L,ir.usar_profundidade);
+		lua_pushnumber(L, ir.camera);
+		lua_pushboolean(L, ir.iniciar_render);
+		lua_pushboolean(L, ir.limpar_buffer_cores);
+		lua_pushboolean(L, ir.limpar_buffer_profundidade);
+		lua_pushboolean(L, ir.desenhar_objetos);
+		lua_pushboolean(L, ir.terminar_render);
+		lua_pushboolean(L, ir.usar_profundidade);
 		return 7;
 	}
 
-	int set_render_layer_instruction(lua_State* L){
+	int set_render_layer_instruction(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		if(argumentos == 8){
+		if (argumentos == 8) {
 			instrucoes_render_struct ir;
-			ir.camera = (int)lua_tonumber(L,2);
-			ir.iniciar_render = (bool)lua_toboolean(L,3);
-			ir.limpar_buffer_cores = (bool)lua_toboolean(L,4);
-			ir.limpar_buffer_profundidade = (bool)lua_toboolean(L,5);
-			ir.desenhar_objetos = (bool)lua_toboolean(L,6);
-			ir.terminar_render = (bool)lua_toboolean(L,7);
-			ir.usar_profundidade = (bool)lua_toboolean(L,8);
+			ir.camera = (int)lua_tonumber(L, 2);
+			ir.iniciar_render = (bool)lua_toboolean(L, 3);
+			ir.limpar_buffer_cores = (bool)lua_toboolean(L, 4);
+			ir.limpar_buffer_profundidade = (bool)lua_toboolean(L, 5);
+			ir.desenhar_objetos = (bool)lua_toboolean(L, 6);
+			ir.terminar_render = (bool)lua_toboolean(L, 7);
+			ir.usar_profundidade = (bool)lua_toboolean(L, 8);
 
-			api_grafica->info_render[(int)lua_tonumber(L,1)] = ir;
+			api_grafica->info_render[(int)lua_tonumber(L, 1)] = ir;
 
 		}
 		return 0;
@@ -1734,10 +1734,10 @@ namespace funcoes_ponte {
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if(argumentos == 1 && obj != NULL && obj->pegar_componente<render_malha>() != NULL){
+		if (argumentos == 1 && obj != NULL && obj->pegar_componente<render_malha>() != NULL) {
 			output = obj->pegar_componente<render_malha>()->minhas_malhas.size();
 		}
-		lua_pushnumber(L,output);
+		lua_pushnumber(L, output);
 		return 1;
 	}
 	int set_mesh_size(lua_State* L) {
@@ -1746,7 +1746,7 @@ namespace funcoes_ponte {
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if(argumentos == 2 && obj != NULL && obj->pegar_componente<render_malha>() != NULL){
+		if (argumentos == 2 && obj != NULL && obj->pegar_componente<render_malha>() != NULL) {
 			obj->pegar_componente<render_malha>()->minhas_malhas.resize((int)lua_tonumber(L, 2));
 			obj->pegar_componente<render_malha>()->mats.resize((int)lua_tonumber(L, 2));
 		}
@@ -1761,12 +1761,12 @@ namespace funcoes_ponte {
 	int set_mesh(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		int output = 0;
-			objeto_jogo* obj = NULL;
+		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if(argumentos == 4 && obj != NULL && obj->pegar_componente<render_malha>() != NULL){
-			ManuseioDados::carregar_malha_thread(lua_tostring(L, 3),lua_tostring(L, 4),&obj->pegar_componente<render_malha>()->minhas_malhas[(int)lua_tonumber(L,2)]);
+		if (argumentos == 4 && obj != NULL && obj->pegar_componente<render_malha>() != NULL) {
+			ManuseioDados::carregar_malha_thread(lua_tostring(L, 3), lua_tostring(L, 4), &obj->pegar_componente<render_malha>()->minhas_malhas[(int)lua_tonumber(L, 2)]);
 		}
 		return 0;
 	}
@@ -1792,24 +1792,24 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("get_tilemap_data", funcoes_ponte::get_tilemap_data),
 
 		//objeto
-		pair<string, int(*)(lua_State*)>( "create_object", funcoes_ponte::create_object),
-		pair<string, int(*)(lua_State*)>( "remove_object", funcoes_ponte::remove_object),
-		pair<string, int(*)(lua_State*)>( "add_component", add_component),
-		pair<string, int(*)(lua_State*)>( "remove_component", remove_component),
-		pair<string, int(*)(lua_State*)>( "reset_components", funcoes_ponte::reset_components),
+		pair<string, int(*)(lua_State*)>("create_object", funcoes_ponte::create_object),
+		pair<string, int(*)(lua_State*)>("remove_object", funcoes_ponte::remove_object),
+		pair<string, int(*)(lua_State*)>("add_component", add_component),
+		pair<string, int(*)(lua_State*)>("remove_component", remove_component),
+		pair<string, int(*)(lua_State*)>("reset_components", funcoes_ponte::reset_components),
 		//pair<string, int(*)(lua_State*)>( "get_component_size", get_component_size),
-		pair<string, int(*)(lua_State*)>( "have_component", have_component),
+		pair<string, int(*)(lua_State*)>("have_component", have_component),
 
-		pair<string, int(*)(lua_State*)>( "get_father", funcoes_ponte::get_father),
-		pair<string, int(*)(lua_State*)>( "get_childrens_size", funcoes_ponte::get_childrens_size),
-		pair<string, int(*)(lua_State*)>( "get_children", funcoes_ponte::get_children),
+		pair<string, int(*)(lua_State*)>("get_father", funcoes_ponte::get_father),
+		pair<string, int(*)(lua_State*)>("get_childrens_size", funcoes_ponte::get_childrens_size),
+		pair<string, int(*)(lua_State*)>("get_children", funcoes_ponte::get_children),
 
 		//movimento
-		pair<string, int(*)(lua_State*)>( "to_move", funcoes_ponte::to_move),
-		pair<string, int(*)(lua_State*)>( "in_ceiling", funcoes_ponte::in_ceiling),
-		pair<string, int(*)(lua_State*)>( "in_floor", funcoes_ponte::in_floor),
-		pair<string, int(*)(lua_State*)>( "get_gravity", funcoes_ponte::get_gravity),
-		pair<string, int(*)(lua_State*)>( "set_gravity", funcoes_ponte::set_gravity),
+		pair<string, int(*)(lua_State*)>("to_move", funcoes_ponte::to_move),
+		pair<string, int(*)(lua_State*)>("in_ceiling", funcoes_ponte::in_ceiling),
+		pair<string, int(*)(lua_State*)>("in_floor", funcoes_ponte::in_floor),
+		pair<string, int(*)(lua_State*)>("get_gravity", funcoes_ponte::get_gravity),
+		pair<string, int(*)(lua_State*)>("set_gravity", funcoes_ponte::set_gravity),
 
 		//transform
 		pair<string, int(*)(lua_State*)>("get_is_ui", funcoes_ponte::get_is_ui),
@@ -1872,8 +1872,8 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("get_tile", funcoes_ponte::get_tile),
 
 		//render tilemap
-		pair<string, int(*)(lua_State*)>( "get_tilemap", funcoes_ponte::get_tilemap),
-		pair<string, int(*)(lua_State*)>( "set_tilemap", funcoes_ponte::set_tilemap),
+		pair<string, int(*)(lua_State*)>("get_tilemap", funcoes_ponte::get_tilemap),
+		pair<string, int(*)(lua_State*)>("set_tilemap", funcoes_ponte::set_tilemap),
 
 		pair<string, int(*)(lua_State*)>("get_render_only_tilemap_layer", funcoes_ponte::get_render_only_tilemap_layer),
 		pair<string, int(*)(lua_State*)>("set_render_only_tilemap_layer", funcoes_ponte::set_render_only_tilemap_layer),
@@ -1922,7 +1922,7 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("set_mesh", set_mesh),
 
 	};
-	
+
 };
 
 
@@ -1942,7 +1942,7 @@ namespace funcoes_lua {
 	void adicionar_funcoes_ponte_estado_lua(lua_State* L) {
 		vector<pair<string, int(*)(lua_State*)>> funcoes_ponte_pair = map_vetor<string, int(*)(lua_State*)>(funcoes_ponte::funcoes_ponte_map);
 
-		
+
 
 		//solu��o 2
 		//thread af(adicionar_parte_funcoes_ponte_estado_lua, L, funcoes_ponte_pair, 0, (int)funcoes_ponte_pair.size() / 2);
@@ -1955,10 +1955,10 @@ namespace funcoes_lua {
 		}
 	}
 
-	
+
 
 	void iniciar_estado_lua(lua_State* L) {
-		
+
 
 		//argumentos
 		{
@@ -1973,7 +1973,7 @@ namespace funcoes_lua {
 			lua_pushinteger(L, argumentos.size());
 			lua_setglobal(L, "argsn");
 		}
-		
+
 		//get_input
 		{
 			//controle & mouse
@@ -2000,7 +2000,7 @@ namespace funcoes_lua {
 		}
 
 		//af.join();
-		
+
 		funcoes_lua::adicionar_funcoes_ponte_estado_lua(L);
 
 	}
@@ -2016,7 +2016,7 @@ namespace funcoes_lua {
 		lua_State* ret = luaL_newstate();
 		luaL_openlibs(ret);
 
-		
+
 		//configurar diretorio
 		string local = pegar_local_aplicacao() + "/resources/Scripts/?.lua";
 		lua_getglobal(ret, "package");
@@ -2024,11 +2024,11 @@ namespace funcoes_lua {
 		lua_setfield(ret, -2, "path");
 		lua_pop(ret, 1);
 
-		
+
 		//int i = luaL_dofile(ret,s.c_str());
 		int i = luaL_dostring(ret, carregar_script_lua(s)->c_str());
 		funcoes_lua::iniciar_estado_lua(ret);
-		
+
 
 		//buscar erros
 		if (i != LUA_OK) {
@@ -2037,17 +2037,17 @@ namespace funcoes_lua {
 			string erro = lua_tostring(ret, -1);
 			escrever(erro);
 		}
-		
 
-		
-		
+
+
+
 
 		return ret;
 	}
 
 
 
-	
+
 };
 
 
@@ -2058,7 +2058,7 @@ class componente_lua : public componente {
 	map<string, shared_ptr<string>> scripts_lua_string;
 	map<string, bool> scripts_lua_iniciados;
 public:
-	
+
 	vector<string> pegar_lista_scripts() {
 		vector<string> ret = {};
 		for (pair<string, lua_State*> p : estados_lua) {
@@ -2102,16 +2102,16 @@ public:
 			lua_call(estados_lua[s], 0, 0);
 			remover_script(s);
 		}
-		
-		
+
+
 		lua_State* L = funcoes_lua::carregar_luaState(s);
 		estados_lua.insert(pair<string, lua_State*>(s, L));
 		scripts_lua_string.insert(pair<string, shared_ptr<string>>(s, carregar_script_lua(s)));
 		scripts_lua_iniciados.insert(pair<string, bool>(s, false));
-		
+
 		lua_pushstring(L, ponteiro_string(esse_objeto.get()).c_str());
 		lua_setglobal(L, "this_object_ptr");
-		
+
 		//if (iniciado) {
 		//	lua_getglobal(estados_lua[s], "START");
 		//	lua_call(estados_lua[s], 0, 0);
@@ -2126,14 +2126,14 @@ public:
 	}
 
 
-	
 
 
 
-	
-	
 
-	void iniciar() { 
+
+
+
+	void iniciar() {
 		iniciado = true;
 		for (pair<string, lua_State*> p : estados_lua) {
 			//esse objetoget_tile_set_tile
@@ -2146,13 +2146,14 @@ public:
 		}
 	}
 	void atualisar() {
-		
+
 		for (pair<string, lua_State*> p : estados_lua) {
-			if(scripts_lua_iniciados[p.first]){
+			if (scripts_lua_iniciados[p.first]) {
 				lua_State* L = p.second;
 				lua_getglobal(L, "UPDATE");
-				lua_call(L,0,0);
-			}else{
+				lua_call(L, 0, 0);
+			}
+			else {
 				lua_pushstring(p.second, ponteiro_string(esse_objeto.get()).c_str());
 				lua_setglobal(p.second, "this_object_ptr");
 				lua_getglobal(p.second, "START");
@@ -2199,7 +2200,7 @@ public:
 
 		}
 	}
-	~componente_lua() { 
+	~componente_lua() {
 		limpar_scripts();
 	}
 	//mudar
@@ -2238,7 +2239,7 @@ public:
 		return ret;
 	}
 	int pegar_int(string script, string var) {
-		int ret = 0; 
+		int ret = 0;
 		if (estados_lua.find(script) != estados_lua.end()) {
 			lua_getglobal(estados_lua[script], var.c_str());
 			ret = lua_tointeger(estados_lua[script], -1);
@@ -2261,8 +2262,8 @@ public:
 		}
 		return ret;
 	}
-	
-	void chamar_funcao(string script, string func){
+
+	void chamar_funcao(string script, string func) {
 		if (estados_lua.find(script) != estados_lua.end()) {
 			lua_getglobal(estados_lua[script], func.c_str());
 			lua_call(estados_lua[script], 0, 0);
@@ -2270,12 +2271,12 @@ public:
 	}
 
 	componente_lua() {
-		
+
 	}
-	componente_lua(string s) { 
+	componente_lua(string s) {
 		adicionar_script(s);
 	}
-	componente_lua(vector<string> s) { 
+	componente_lua(vector<string> s) {
 		adicionar_scripts(s);
 	}
 
@@ -2327,7 +2328,7 @@ int add_component(lua_State* L) {
 		else if (string(lua_tostring(L, 2)).compare("render_mesh") == 0) {
 			obj->adicionar_componente<render_malha>();
 		}
-		
+
 	}
 
 
@@ -2382,68 +2383,68 @@ int remove_component(lua_State* L) {
 	return 0;
 }
 
-int get_component_size(lua_State* L){
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		int ret = 0;
-		if(argumentos == 1){
-			ret = obj->pegar_lista_componentes().size();
-		}
+int get_component_size(lua_State* L) {
+	int argumentos = lua_gettop(L);
+	objeto_jogo* obj = NULL;
+	if (argumentos > 0) {
+		obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+	}
+	int ret = 0;
+	if (argumentos == 1) {
+		ret = obj->pegar_lista_componentes().size();
+	}
 
-		lua_pushnumber(L,ret);
-		return 1;
+	lua_pushnumber(L, ret);
+	return 1;
 }
 
 
 
-int have_component(lua_State* L){
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+int have_component(lua_State* L) {
+	int argumentos = lua_gettop(L);
+	objeto_jogo* obj = NULL;
+	if (argumentos > 0) {
+		obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+	}
+	bool ret = false;
+	if (argumentos == 2) {
+		if (string(lua_tostring(L, 2)).compare("transform") == 0) {
+			ret = obj->tem_componente<Objetos::transform>();
 		}
-		bool ret = false;
-		if(argumentos == 2){
-			if (string(lua_tostring(L, 2)).compare("transform") == 0) {
-				ret = obj->tem_componente<Objetos::transform>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("camera") == 0) {
-				ret = obj->tem_componente<Objetos::camera>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("render_text") == 0) {
-				ret = obj->tem_componente<Objetos::render_texto>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("render_sprite") == 0) {
-				ret = obj->tem_componente<Objetos::render_sprite>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("render_shader") == 0) {
-				ret = obj->tem_componente<Objetos::render_shader>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("physics_2D") == 0) {
-				ret = obj->tem_componente<box_2D>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("character_physics_2D") == 0) {
-				ret = obj->tem_componente<fisica_char_B2D>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("audio_source") == 0) {
-				ret = obj->tem_componente<sfml_audio>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("lua_scripts") == 0) {
-				ret = obj->tem_componente<componente_lua>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("render_tile_map") == 0) {
-				ret = obj->tem_componente<render_tilemap>();
-			}
-			else if (string(lua_tostring(L, 2)).compare("render_mesh") == 0) {
-				obj->tem_componente<render_malha>();
-			}
+		else if (string(lua_tostring(L, 2)).compare("camera") == 0) {
+			ret = obj->tem_componente<Objetos::camera>();
 		}
+		else if (string(lua_tostring(L, 2)).compare("render_text") == 0) {
+			ret = obj->tem_componente<Objetos::render_texto>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("render_sprite") == 0) {
+			ret = obj->tem_componente<Objetos::render_sprite>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("render_shader") == 0) {
+			ret = obj->tem_componente<Objetos::render_shader>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("physics_2D") == 0) {
+			ret = obj->tem_componente<box_2D>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("character_physics_2D") == 0) {
+			ret = obj->tem_componente<fisica_char_B2D>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("audio_source") == 0) {
+			ret = obj->tem_componente<sfml_audio>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("lua_scripts") == 0) {
+			ret = obj->tem_componente<componente_lua>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("render_tile_map") == 0) {
+			ret = obj->tem_componente<render_tilemap>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("render_mesh") == 0) {
+			obj->tem_componente<render_malha>();
+		}
+	}
 
-		lua_pushboolean(L,ret);
-		return 1;
+	lua_pushboolean(L, ret);
+	return 1;
 }
 
 int add_script_lua(lua_State* L) {
@@ -2454,7 +2455,7 @@ int add_script_lua(lua_State* L) {
 	}
 	shared_ptr<componente_lua> cl = obj->pegar_componente<componente_lua>();
 	if (argumentos == 2 && cl != NULL) {
-		cl->adicionar_script( lua_tostring(L, 2));
+		cl->adicionar_script(lua_tostring(L, 2));
 	}
 	return 0;
 }
@@ -2531,12 +2532,12 @@ int get_script_var(lua_State* L) {
 	}
 	shared_ptr<componente_lua> cl = obj->pegar_componente<componente_lua>();
 	if (argumentos == 4 && cl != NULL) {
-		
+
 		if (lua_tonumber(L, 4) == 0) {
 			lua_pushstring(L, cl->pegar_string(lua_tostring(L, 2), lua_tostring(L, 3)).c_str());
 			return 1;
 		}
-		else if(lua_tonumber(L, 4) == 1) {
+		else if (lua_tonumber(L, 4) == 1) {
 			lua_pushnumber(L, cl->pegar_numero(lua_tostring(L, 2), lua_tostring(L, 3)));
 			return 1;
 		}
@@ -2563,18 +2564,18 @@ int set_script_var(lua_State* L) {
 		}
 		else if (lua_tonumber(L, 4) == 1) {
 			cl->mudar_numero(lua_tostring(L, 2), lua_tostring(L, 3), lua_tonumber(L, 5));
-			
+
 		}
 		else if (lua_tonumber(L, 4) == 2) {
 			cl->mudar_boleana(lua_tostring(L, 2), lua_tostring(L, 3), lua_toboolean(L, 5));
-			
+
 		}
 
 	}
 	return 0;
 }
 
-int call_script_function(lua_State* L){
+int call_script_function(lua_State* L) {
 	int argumentos = lua_gettop(L);
 	objeto_jogo* obj = NULL;
 	if (argumentos > 0) {
@@ -2582,7 +2583,7 @@ int call_script_function(lua_State* L){
 	}
 	shared_ptr<componente_lua> cl = obj->pegar_componente<componente_lua>();
 	if (argumentos == 3 && cl != NULL) {
-		cl->chamar_funcao(lua_tostring(L, 2),lua_tostring(L, 3));
+		cl->chamar_funcao(lua_tostring(L, 2), lua_tostring(L, 3));
 	}
 	return 0;
 }

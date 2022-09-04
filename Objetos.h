@@ -34,7 +34,7 @@ namespace Objetos {
 	};
 	
 
-	mat4 MatrizMundi = mat4(1.0f);
+	mat4 MatrizMundi = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 0.0f));
 
 	class transform : public componente {
 	public:
@@ -203,11 +203,11 @@ namespace Objetos {
 
 		glm::vec3 pos, alvo, cima;
 
-		bool ortografica;
-		float zoom;
-		vec2 tamanho,res;
-		float ncp;
-		float fcp;
+		bool ortografica = false;
+		float zoom = 90;
+		vec2 tamanho = vec2(20,20),res = vec2(1,1);
+		float ncp = 0.01;
+		float fcp = 100;
 		glm::mat4 matrizVisao, matrizProjecao;
 
 		int8_t prioridade = 0;
@@ -216,44 +216,21 @@ namespace Objetos {
 
 		camera() {}
 
-		glm::mat4 gerar_matriz_visao(vec3 p, vec3 a, vec3 c) {
-
-			mat4 ret = glm::lookAt(
-				p, // World Space
-				a, // and looks at the origin
-				c  // Head is up 
-			);
-
-			return ret;
-
-
-		}
+		
 
 		glm::mat4 gerar_matriz_perspectiva(float zoom, int resX, int resY, float ncp, float fcp) {
 
-			mat4 ret = glm::perspective(glm::radians(zoom), (float)resX / (float)resY, ncp, fcp);
+			mat4 ret = glm::perspective(glm::radians(zoom), (float)(resX / resY), ncp, fcp);
+			matrizProjecao = ret;
 			res.x = resX;
 			res.y = resY;
-			matrizProjecao = ret;
 			this->fcp = fcp;
 			this->ncp = ncp;
 			return ret;
 
 		}
 
-		void configurar_camera(glm::vec3 p, glm::vec3 a, glm::vec3 c, float ZooM, int resX, int resY, float ncp, float fcp) {
-			pos = p;
-			alvo = a;
-			cima = c;
-
-			matrizVisao = gerar_matriz_visao(p, a, c);
-
-			ortografica = true;
-			zoom = ZooM;
-			this->fcp = fcp;
-			this->ncp = ncp;
-			matrizProjecao = gerar_matriz_perspectiva(ZooM, resX, -resY, ncp, fcp);
-		}
+		
 
 
 
@@ -269,13 +246,27 @@ namespace Objetos {
 		}
 
 
+		void configurar_camera(glm::vec3 p, glm::vec3 a, glm::vec3 c, float ZooM, int resX, int resY, float ncp, float fcp) {
+			pos = p;
+			alvo = a;
+			cima = c;
+
+			matrizVisao = glm::lookAt(p, a, c);
+
+			ortografica = false;
+			zoom = ZooM;
+			this->fcp = fcp;
+			this->ncp = ncp;
+			matrizProjecao = gerar_matriz_perspectiva(ZooM, resX, resY, ncp, fcp);
+		}
+
 
 		void configurar_camera(glm::vec3 p, glm::vec3 a, glm::vec3 c, float tamanhoX, float tamanhoY, float ncp, float fcp) {
 			pos = p;
 			alvo = a;
 			cima = c;
 
-			matrizVisao = gerar_matriz_visao(p, a, c);
+			matrizVisao = glm::lookAt(p, a, c);
 
 			ortografica = true;
 			tamanho = vec2(-tamanhoX, tamanhoY);
@@ -289,7 +280,7 @@ namespace Objetos {
 
 
 		camera(glm::vec3 p, glm::vec3 a, glm::vec3 c, float zoom, int resX, int resY, float ncp, float fcp) {
-			configurar_camera(p, a, c, zoom, resX, -resY, ncp, fcp);
+			configurar_camera(p, a, c, zoom, resX, resY, ncp, fcp);
 
 		}
 
@@ -316,9 +307,9 @@ namespace Objetos {
 				glm::decompose(paiTF->matrizTransform, nada, qua, pos, nada, nada2);
 
 				matrizVisao = glm::lookAt(
-					pos, // World Space
-					pos + vec3(0, 0, 1), // and looks at the origin
-					vec3(0, 1, 0)  // Head is up 
+					this->pos + pos, // World Space
+					pos + alvo, // and looks at the origin
+					this->cima  // Head is up 
 				);
 
 				matrizVisao *= toMat4(qua);
@@ -397,7 +388,7 @@ namespace Objetos {
 		public:
 		render_malha() {}
 		bool ligado = true;
-		lado_render_malha lado_render = lado_render_malha::front;
+		lado_render_malha lado_render = lado_render_malha::both;
 		bool usar_oclusao = true;
 		float porcentagem_pode_ocupar_tela = 1;
 		uint8_t camada = 0;
@@ -528,6 +519,7 @@ namespace Objetos {
 
 		template<typename X>
 		void adicionar_componente(string nome,X comp) {
+			limpar_lixo();
 			comp.esse_objeto = esse_objeto;
 			if(componentes.find(nome) == componentes.end()){
 				componentes.insert(pair<string, shared_ptr<componente>>(nome, std::make_shared<X>(comp)));
@@ -573,6 +565,7 @@ namespace Objetos {
 		}
 
 		void remover_componente(string s) {
+			limpar_lixo();
 			if (componentes.find(s) != componentes.end()) {
 				if (em_cena) {
 					componentes[s]->finalisar();
@@ -662,9 +655,9 @@ namespace Objetos {
 		}
 
 		void atualisar() {
-			limpar_lixo();
+			
 			if ( em_cena) {
-				
+				limpar_lixo();
 
 				for (pair<string, shared_ptr<componente>> p : componentes) {
 					p.second->atualisar();
@@ -750,17 +743,18 @@ namespace Objetos {
 		vector<shared_ptr<objeto_jogo>> lista_objetos;
 		
 	
-		vector<int> transforms;
-		vector<int> cameras;
-		vector<int> renders;
-
-		vector<int> fontes_luzes;
-
+		
+		vector<int> cameras_id;
+		vector<shared_ptr<objeto_jogo>> cameras;
 		
 
-		vector<vector<int>> transforms_hierarquia;
-		vector<vector<int>> objetos_camadas_render;
+		vector<int> fontes_luzes_id;
 		
+		
+
+		
+		vector<vector<int>> objetos_camadas_render_id;
+		vector<vector<shared_ptr<objeto_jogo>>> objetos_camadas_render;
 		
 
 		shared_ptr<objeto_jogo> operator [] (int i) { return lista_objetos[i]; }
@@ -812,7 +806,8 @@ namespace Objetos {
 					void* componente[6];
 					componente[0] = obj->pegar_componente<camera>().get();
 					if (componente[0] != NULL) {
-						cameras.push_back(obj->ID);
+						cameras_id.push_back(obj->ID);
+						cameras.push_back(obj);
 					}
 
 
@@ -823,36 +818,51 @@ namespace Objetos {
 
 
 
-					//objetos_camadas_render
+					//objetos_camadas_render_id
 					shared_ptr<render_shader> rs = obj->pegar_componente<render_shader>();
 					if ((rs != NULL && rs->ligado)) {
+						if (objetos_camadas_render_id.size() < (rs->camada + 1)) { objetos_camadas_render_id.resize(rs->camada + 1); }
+						objetos_camadas_render_id[rs->camada].push_back(obj->ID);
+
 						if (objetos_camadas_render.size() < (rs->camada + 1)) { objetos_camadas_render.resize(rs->camada + 1); }
-						objetos_camadas_render[rs->camada].push_back(obj->ID);
+						objetos_camadas_render[rs->camada].push_back(obj);
 					}
 					shared_ptr < render_texto> RT = obj->pegar_componente<render_texto>();
 					if ((RT != NULL && RT->ligado)) {
+						if (objetos_camadas_render_id.size() < (RT->camada + 1)) { objetos_camadas_render_id.resize(RT->camada + 1); }
+						objetos_camadas_render_id[RT->camada].push_back(obj->ID);
+
 						if (objetos_camadas_render.size() < (RT->camada + 1)) { objetos_camadas_render.resize(RT->camada + 1); }
-						objetos_camadas_render[RT->camada].push_back(obj->ID);
+						objetos_camadas_render[RT->camada].push_back(obj);
 					}
 					shared_ptr < render_tilemap> RTM = obj->pegar_componente<render_tilemap>();
 					if ((RTM != NULL && RTM->ligado)) {
+						if (objetos_camadas_render_id.size() < (RTM->camada + 1)) { objetos_camadas_render_id.resize(RTM->camada + 1); }
+						objetos_camadas_render_id[RTM->camada].push_back(obj->ID);
+
 						if (objetos_camadas_render.size() < (RTM->camada + 1)) { objetos_camadas_render.resize(RTM->camada + 1); }
-						objetos_camadas_render[RTM->camada].push_back(obj->ID);
+						objetos_camadas_render[RTM->camada].push_back(obj);
 					}
 					shared_ptr < render_sprite> RS = obj->pegar_componente<render_sprite>();
 					if ((RS != NULL && RS->ligado)) {
+						if (objetos_camadas_render_id.size() < (RS->camada + 1)) { objetos_camadas_render_id.resize(RS->camada + 1); }
+						objetos_camadas_render_id[RS->camada].push_back(obj->ID);
+
 						if (objetos_camadas_render.size() < (RS->camada + 1)) { objetos_camadas_render.resize(RS->camada + 1); }
-						objetos_camadas_render[RS->camada].push_back(obj->ID);
+						objetos_camadas_render[RS->camada].push_back(obj);
 					}
 
 					shared_ptr < render_malha> RM = obj->pegar_componente<render_malha>();
 					if ((RM != NULL && RM->ligado)) {
-						if (objetos_camadas_render.size() < (RM->camada + 1)) { objetos_camadas_render.resize(RM->camada + 1); }
-							objetos_camadas_render[RM->camada].push_back(obj->ID);
+						if (objetos_camadas_render_id.size() < (RM->camada + 1)) { objetos_camadas_render_id.resize(RM->camada + 1); }
+							objetos_camadas_render_id[RM->camada].push_back(obj->ID);
+
+							if (objetos_camadas_render.size() < (RM->camada + 1)) { objetos_camadas_render.resize(RM->camada + 1); }
+							objetos_camadas_render[RM->camada].push_back(obj);
 					}
 					shared_ptr <fonte_luz> FL = obj->pegar_componente<fonte_luz>();
 					if ((FL != NULL && FL->ligado)) {
-						fontes_luzes.push_back(obj->ID);
+						fontes_luzes_id.push_back(obj->ID);
 					}
 
 
@@ -876,9 +886,11 @@ namespace Objetos {
 
 
 				lista_objetos.clear();
+				cameras_id.clear();
+				objetos_camadas_render_id.clear();
+				fontes_luzes_id.clear();
 				cameras.clear();
 				objetos_camadas_render.clear();
-				fontes_luzes.clear();
 
 				adicionar_objeto_lista(objeto_cena);
 
