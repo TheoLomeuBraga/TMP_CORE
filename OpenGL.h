@@ -320,7 +320,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 		map<shared_ptr<objeto_jogo>, unsigned int> oclusion_queries2;
 		map<shared_ptr<objeto_jogo>, int> oclusion_queries_resultados2;
 		for (pair<shared_ptr<objeto_jogo>, unsigned int> p : oclusion_queries) {
-			if (p.first.use_count() > 1) {
+			if (p.first.use_count() >= 1) {
 				oclusion_queries2.insert(p);
 				oclusion_queries_resultados2.insert(pair<shared_ptr<objeto_jogo>, int>(p.first,0));
 			} else {

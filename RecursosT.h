@@ -822,7 +822,7 @@ public:
 			void limpar_lixo() {
 				map<string, shared_ptr<Y>> mapa2;
 				for (pair<string, shared_ptr<Y>> p : mapa) {
-					if (p.second.use_count() > 1) {
+					if (p.second.use_count() >= 1) {
 						mapa2.insert(p);
 					}
 				}
