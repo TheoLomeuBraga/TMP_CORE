@@ -7,6 +7,8 @@
 #include <set>
 #include <iostream>
 #include <filesystem>
+#include <stdio.h>
+#include <thread>
 
 
 #include <GL/glew.h>
@@ -18,6 +20,9 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 using namespace glm;
 
@@ -551,7 +556,7 @@ public:
 			
 			shared_ptr<imagem> texturas[NO_TEXTURAS];
 			float inputs[NO_INPUTS];
-			float interpolacao,gama = 1;
+			float interpolacao,gama = 1,metalico = 0,suave = 0;
 			vec4 cor = vec4(1, 1, 1, 1);
 			vec4 uv_pos_sca = vec4(0, 0, 1, 1);
 			Material() {
@@ -598,7 +603,7 @@ public:
 				class malha : public asset{
 				public:
 					malha() {}
-					string nome;
+					string arquivo_origem,nome;
 					vector<unsigned int> indice;
 					vector<vertice> vertices;
 					map<string,vector<vertice>> shape_keys;
@@ -616,9 +621,7 @@ public:
 						}
 
 						//comprimir malha e gerar index
-						cout << "AAAAAAAAAAAAAA " << vertices.size() << endl;
 						vector<vertice> novos_vertices = remover_elementos_duplicados<vertice>(vertices);
-						cout << "AAAAAAAAAAAAAA " << novos_vertices.size() << endl;
 						vector<unsigned int> novo_indice;
 
 						novo_indice.resize(indice.size());
@@ -684,7 +687,7 @@ public:
 					}
 				}
 
-
+				
 
 
 				class cena_3D : public asset{
@@ -698,7 +701,115 @@ public:
 					map<string,vector<key_frame>> animacoes;
 
 				};
-		
+
+
+				
+
+				template<typename X, typename Y>
+				vector<X> pegar_primeiros_map(map<X, Y> m) {
+					vector<X> ret;
+					for (pair<X, Y> p : m) {
+						ret.push_back(p.first);
+					}
+					return ret;
+				}
+				template<typename X, typename Y>
+				void pegar_primeiros_map_thread(map<X, Y> m, vector<X>* ret) {
+					*ret = pegar_primeiros_map<X, Y>(m);
+				}
+
+				void pegar_nomes_malhas_thread(map<string, shared_ptr<malha>> m, vector<string> *ret) {
+					pegar_primeiros_map_thread<string, shared_ptr<malha>>(m,ret );
+				}
+
+				void pegar_nomes_materiais_thread(map<string, Material> m, vector<string>* ret) {
+					pegar_primeiros_map_thread<string, Material > (m, ret);
+				}
+
+				void pegar_nomes_texturas_thread(map<string, shared_ptr<imagem>> m, vector<string>* ret) {
+					pegar_primeiros_map_thread<string, shared_ptr<imagem>>(m, ret);
+				}
+
+				
+
+				json converter_objeto_3D_para_json(objeto_3D o3D) {
+					vector<json> filhos = {};
+
+					for(objeto_3D o3D : o3D.filhos){
+						filhos.push_back(converter_objeto_3D_para_json(o3D));
+					}
+
+					json ret = {
+						{"name",o3D.nome},
+						{"meshes",o3D.minhas_malhas},
+						{"materials",o3D.meus_materiais},
+						{"variables",o3D.variaveis},
+						{"position",{{"x",o3D.posicao.x},{"y",o3D.posicao.y},{"z",o3D.posicao.z}}},
+						{"quaternion",{{"x",o3D.quaternion.x},{"y",o3D.quaternion.y},{"z",o3D.quaternion.z},{"w",o3D.quaternion.w}}},
+						{"escale",{{"x",o3D.escala.x},{"y",o3D.escala.y},{"z",o3D.escala.z}}},
+						{"childrens", filhos},
+					};
+					return ret;
+				}
+
+				void converter_objeto_3D_para_json_thread(objeto_3D o3D, json *ret) {
+					*ret = converter_objeto_3D_para_json(o3D);
+				}
+
+				//adicionar lua cena 3D
+				string converter_cena_3D_para_json(shared_ptr<cena_3D> c3D) {
+					string ret = "";
+
+					vector<string> malhas;
+					thread ta(pegar_nomes_malhas_thread, c3D->malhas, &malhas);
+
+					vector<string> materiais;
+					thread tb(pegar_nomes_materiais_thread, c3D->materiais, &materiais);
+
+					vector<string> texturas;
+					thread tc(pegar_nomes_texturas_thread, c3D->texturas, &texturas);
+
+					json objetos = {};
+					thread td(converter_objeto_3D_para_json_thread, c3D->objetos, &objetos);
+
+					json animacoes = {};
+					for (pair<string, vector<key_frame>> p : c3D->animacoes) {
+						vector<json> animacao = {};
+						
+						for (key_frame kf : p.second) {
+							json key_frame = {};
+
+							key_frame["duration"] = kf.duracao;
+							key_frame["frame"] = converter_objeto_3D_para_json(kf.frame);
+
+							animacao.push_back(key_frame);
+						}
+						
+						
+						animacoes[p.first] = animacao;
+					}
+
+
+					ta.join();
+					tb.join();
+					tc.join();
+					td.join();
+
+					
+
+					json JSON = {
+						{"name",c3D->caminho},
+						{"meshs",malhas},
+						{"materials",materiais},
+						{"textures",texturas},
+						{"objects",objetos},
+						{"animation",animacoes},
+					};
+
+
+					ret = JSON.dump();
+					return ret;
+				}
 
 
 #define SAIDAS_SHADER 6
@@ -720,7 +831,8 @@ public:
 			virtual void iniciar_lib() {}
 			virtual void desenhar_tela(Material mat) {}
 			virtual void mudar_render_res(int X, int Y) {}
-			virtual imagem* captura_de_tela() { return NULL; }
+			virtual shared_ptr<imagem> captura_de_tela() { return NULL; }
+			shared_ptr<imagem> rodar_compute_shader(Material mat, int resx, int resy, int chanels) { return NULL; }
 			virtual int pegar_id_obj(int X,int Y) { return 0; }
 			virtual void limpar_bufers_render(bool cor, bool profundidade) {}
 			virtual void remover_textura(imagem* img) {}
@@ -741,7 +853,7 @@ public:
 		void remover_malha(malha* ma) {
 			if (api_grafica != NULL) {
 				api_grafica->remover_malha(ma);
-				cout << "malha: " << ma << " foi removida\n";
+				cout << "malha: " << ma->nome << " foi removida\n";
 			}
 		}
 		void remover_fonte(fonte* f) {
@@ -767,14 +879,24 @@ public:
 				api_grafica->reindenizar_cenario();
 			}
 		}
-		imagem* captura_de_tela() {
+		shared_ptr<imagem> captura_de_tela() {
 			return api_grafica->captura_de_tela();
-
+		}
+		shared_ptr<imagem> rodar_compute_shader(Material mat,int resx,int resy,int chanels) {
+			return api_grafica->rodar_compute_shader(mat, resx, resy, chanels);
 		}
 
 
-		
-
+		class funcoes_OS_classe {
+		private:
+		public:
+			virtual string nome_OS(string s) { return ""; }
+			virtual vector<string> pegar_arquivos_em_diretorio(string s) { return {}; }
+			virtual vector<string> pegar_diretorios_em_diretorio(string s) { return {}; }
+			virtual void criar_diretorio(string s){}
+			virtual void vibrar_controle(vec2 v){}
+		};
+		funcoes_OS_classe* funcoes_OS;
 		
 
 
@@ -822,8 +944,12 @@ public:
 			void limpar_lixo() {
 				map<string, shared_ptr<Y>> mapa2;
 				for (pair<string, shared_ptr<Y>> p : mapa) {
-					if (p.second.use_count() >= 1) {
+					if (p.second.use_count() > 2) {
+						//cout << p.second.use_count() << endl;
 						mapa2.insert(p);
+					}
+					else {
+						cout << p.second.get() << " foi deletado\n";
 					}
 				}
 				mapa.swap(mapa2);
@@ -950,7 +1076,7 @@ public:
 
 
 		
-
+		
 
 
 		template<typename X>
@@ -1004,7 +1130,9 @@ public:
 			}
 			return ret;
 		}
-	
+
+		
+
 		 string pegar_local_aplicacao() {
 			return std::filesystem::current_path().string();
 		 }
@@ -1038,6 +1166,24 @@ public:
 					 break;
 				 }
 			 }
+			 return ret;
+		 }
+
+		 vector<string> pegar_retorno_comando(string comando) {
+			 vector<string> ret = {};
+			 char buffer[128];
+			 FILE* pipe = _popen(comando.c_str(), "r");
+			 if (!pipe) throw std::runtime_error("popen() failed!");
+			 try {
+				 while (fgets(buffer, sizeof buffer, pipe) != NULL)
+					 ret.push_back(string("") += buffer);
+			 }
+			 catch (...) {
+				 _pclose(pipe);
+				 throw;
+			 }
+
+
 			 return ret;
 		 }
 

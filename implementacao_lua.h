@@ -12,7 +12,7 @@ using namespace Objetos;
 #include "sfml_audio.h"
 #include "lua/lua.hpp"
 
-
+#include "projetil.h"
 
 
 
@@ -30,9 +30,57 @@ void carregar_script_lua_thread(string local, shared_ptr<string>* ret) {
 	*ret = carregar_script_lua(local);
 }
 
+json material_json(Material mat){
+	vector<string> textures;
+	for (shared_ptr<imagem> i : mat.texturas) {
+		if (i != NULL) {
+			textures.push_back(i->local);
+		}
+		else
+		{
+			textures.push_back("");
+		}
+	}
 
+	vector<float> inputs;
+	for (float i : mat.inputs) {
+		inputs.push_back(i);
+	}
 
+	json JSON = {
+		{"shader",mat.shad},
+		{"color",{{"r",mat.cor.x},{"g",mat.cor.y},{"b",mat.cor.z},{"a",mat.cor.w}}},
+		{"position_scale",{{"x",mat.uv_pos_sca.x},{"y",mat.uv_pos_sca.y},{"z",mat.uv_pos_sca.z},{"w",mat.uv_pos_sca.w}}},
+		{"metallic",mat.metalico},
+		{"softness",mat.suave},
+		{"textures",textures},
+		{"inputs",inputs},
+		
+	};
+	return JSON;
+}
 
+Material json_material(json JSON) {
+	Material ret = Material();
+	json color = JSON["color"].get<json>(), position_scale = JSON["position_scale"].get<json>();
+	vector<string> textures = JSON["textures"].get<vector<string>>();
+	vector<float> inputs = JSON["inputs"].get<vector<float>>();
+	
+	ret.shad = JSON["shader"].get<string>();
+	ret.cor = vec4(color["r"].get<float>(), color["g"].get<float>(), color["b"].get<float>(), color["a"].get<float>());
+	ret.uv_pos_sca = vec4(position_scale["x"].get<float>(), position_scale["y"].get<float>(), position_scale["z"].get<float>(), position_scale["w"].get<float>());
+	ret.metalico = JSON["metallic"].get<float>();
+	ret.suave = JSON["softness"].get<float>();
+
+	for (int i = 0; i < textures.size(); i++) {
+		ret.texturas[i] = ManuseioDados::carregar_Imagem(textures[i]);
+	}
+	for (int i = 0; i < inputs.size(); i++) {
+		ret.inputs[i] = inputs[i];
+	}
+
+	return ret;
+}
 
 //criar tabela
 			//https://stackoverflow.com/questions/37854422/how-to-create-table-in-table-in-lua-5-1-using-c-api
@@ -127,6 +175,14 @@ namespace funcoes_ponte {
 		return 1;
 	}
 
+	int get_object_with_name(lua_State* L) {
+		string output = "";
+		shared_ptr<objeto_jogo> obj = (*Objetos::cena_objetos_selecionados)[lua_tostring(L, 1)];
+		output = ponteiro_string(obj.get());
+		lua_pushstring(L, output.c_str());
+		return 1;
+	}
+
 	int remove_object(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
@@ -148,53 +204,33 @@ namespace funcoes_ponte {
 		return 0;
 	}
 
-	int get_father(lua_State* L) {
-		string output = "";
+	
+
+	int get_object_family_json(lua_State* L) {
 		int argumentos = lua_gettop(L);
+		string output = "";
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 1 && obj != NULL) {
-			output = ponteiro_string(obj->pai);
-		}
+		if (obj != NULL) {
+			vector<json> criancas;
 
+			for (shared_ptr<objeto_jogo> p : obj->filhos) {
+				criancas.push_back(ponteiro_string(p.get()));
+			}
+
+			json JSON = { 
+				{"father",ponteiro_string(obj->pai)},
+				{"children",criancas},
+			};
+
+			output = JSON.dump();
+		}
+		
 		lua_pushstring(L, output.c_str());
 		return 1;
 	}
-
-	int get_childrens_size(lua_State* L) {
-		int output = 0;
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL) {
-			output = obj->filhos.size();
-			//escrever(obj->filhos.size());
-		}
-
-		lua_pushnumber(L, output);
-		return 1;
-	}
-
-	int get_children(lua_State* L) {
-		string output = "";
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 2 && obj != NULL) {
-			output = ponteiro_string(obj->filhos[(int)lua_tonumber(L, 2)].get());
-		}
-
-		lua_pushstring(L, output.c_str());
-		return 1;
-	}
-
-
 
 	//memory
 	int clear_memory(lua_State* L) {
@@ -255,7 +291,7 @@ namespace funcoes_ponte {
 
 	//read assets
 
-	int tile_set_size(lua_State* L) {
+	int get_tile_set_size(lua_State* L) {
 		int output = 0;
 		int argumentos = lua_gettop(L);
 		if (argumentos == 1) {
@@ -317,112 +353,127 @@ namespace funcoes_ponte {
 		return 1;
 	}
 
+	//adicionar lua cena 3D
+	int get_scene_3D_json(lua_State* L) {
+		int argumentos = lua_gettop(L);
+		string output = "";
+		if (argumentos == 1) {
+			output = converter_cena_3D_para_json(ManuseioDados::carregar_modelo_3D(lua_tostring(L, 1)));
+		}
+		
+		lua_pushstring(L, output.c_str());
+		return 1;
+	}
+
 	//input
 
-	int get_input(lua_State* L) {
-		//http://gamedevgeek.com/tutorials/calling-c-functions-from-lua/
+	
 
+	void push_input_joystick(lua_State* L, string nome, float precao) {
+		lua_pushstring(L, nome.c_str());
+		lua_pushnumber(L, precao);
+		lua_settable(L, -3);
+	}
 
+	void push_input_mouse_keyboard(lua_State* L, string nome, bool precao) {
+		lua_pushstring(L, nome.c_str());
+		lua_pushboolean(L, precao);
+		lua_settable(L, -3);
+	}
+	
+	int set_keyboard_text_input(lua_State* L) {
 		int argumentos = lua_gettop(L);
-
-		string input1 = lua_tostring(L, 1);
-		string input2 = lua_tostring(L, 2);
-		float output = 0;
-
+		if (argumentos == 1) {
+			TECLADO.pegar_input_texto = lua_toboolean(L, 1);
+		}
+		return 0;
+	}
+	int set_cursor_position(lua_State* L) {
+		int argumentos = lua_gettop(L);
 		if (argumentos == 2) {
-			if (input1.compare("joystick") == 0) {
-
-				if (input2.compare("A") == 0 && JOYSTICK[1].botoes[0]) {
-					output = 1;
-				}
-				else if (input2.compare("B") == 0 && JOYSTICK[1].botoes[1]) {
-					output = 1;
-				}
-				else if (input2.compare("X") == 0 && JOYSTICK[1].botoes[2]) {
-					output = 1;
-				}
-				else if (input2.compare("Y") == 0 && JOYSTICK[1].botoes[3]) {
-					output = 1;
-				}
-
-				else if (input2.compare("start") == 0 && JOYSTICK[1].botoes[8]) {
-					output = 1;
-				}
-				else if (input2.compare("back") == 0 && JOYSTICK[1].botoes[9]) {
-					output = 1;
-				}
-
-				else if (input2.compare("RB") == 0 && JOYSTICK[1].botoes[4]) {
-					output = 1;
-				}
-				else if (input2.compare("LB") == 0 && JOYSTICK[1].botoes[6]) {
-					output = 1;
-				}
-				else if (input2.compare("LT") == 0 && JOYSTICK[1].gatilhos[0]) {
-					output = JOYSTICK[1].gatilhos[0];
-				}
-				else if (input2.compare("RT") == 0 && JOYSTICK[1].gatilhos[1]) {
-					output = JOYSTICK[1].gatilhos[1];
-				}
-
-				else if (input2.compare("D_pad_left") == 0 && JOYSTICK[1].D_PAD.x < 0) {
-					output = 1;
-				}
-				else if (input2.compare("D_pad_right") == 0 && JOYSTICK[1].D_PAD.x > 0) {
-					output = 1;
-				}
-				else if (input2.compare("D_pad_up") == 0 && JOYSTICK[1].D_PAD.y > 0) {
-					output = 1;
-				}
-				else if (input2.compare("D_pad_down") == 0 && JOYSTICK[1].D_PAD.y < 0) {
-					output = 1;
-				}
-
-				else if (input2.compare("analog_left_X") == 0) {
-					output = JOYSTICK[1].analogio[1].x;
-				}
-				else if (input2.compare("analog_left_Y") == 0) {
-					output = JOYSTICK[1].analogio[1].y;
-				}
-				else if (input2.compare("analog_right_X") == 0) {
-					output = JOYSTICK[1].analogio[0].x;
-				}
-				else if (input2.compare("analog_right_Y") == 0) {
-					output = JOYSTICK[1].analogio[0].y;
-				}
-
-
-			}
-
-			else if (input1.compare("mouse") == 0) {
-
-				if (input2.compare("left") == 0 && MOUSE.botao[0]) {
-					output = 1;
-				}
-				else if (input2.compare("right") == 0 && MOUSE.botao[1]) {
-					output = 1;
-				}
-				else if (input2.compare("scroll_button") == 0 && MOUSE.botao[2]) {
-					output = 1;
-				}
-				else if (input2.compare("scroll") == 0) {
-					output = MOUSE.scrolRot;
-				}
-				else if (input2.compare("position_x") == 0) {
-					output = MOUSE.cursorPos[0];
-				}
-				else if (input2.compare("position_y") == 0) {
-					output = MOUSE.cursorPos[1];
-				}
-
-
-
+			gerente_janela->mudar_pos_cursor(lua_tonumber(L,1), lua_tonumber(L, 2));
+		}
+		return 0;
+	}
+	int get_keyboard_input(lua_State* L) {
+		lua_newtable(L);
+		{
+			for (pair<string, bool> p : Teclado.teclas) {
+				push_input_mouse_keyboard(L, p.first, p.second);
 			}
 		}
+		return 1;
+	}
+
+	int get_mouse_input(lua_State* L) {
+		lua_newtable(L);
+		{
+			push_input_mouse_keyboard(L, "L", MOUSE.botao[0]);
+			push_input_mouse_keyboard(L, "R", MOUSE.botao[1]);
+			push_input_mouse_keyboard(L, "scroll", MOUSE.botao[2]);
+			push_input_joystick(L, "scroll_rotation", MOUSE.scrolRot);
+
+			lua_pushstring(L, "cursos_position");
+			lua_newtable(L);
+			{
+				push_input_joystick(L, "x", MOUSE.cursorPos[0]);
+				push_input_joystick(L, "y", MOUSE.cursorPos[1]);
+				lua_settable(L, -3);
+			}
+			
+		}
+		return 1;
+	}
+
+	int get_joystick_input(lua_State* L) {
+
+		lua_newtable(L);
+		{
+			push_input_joystick(L, "A", JOYSTICK[1].botoes[0]);
+			push_input_joystick(L, "B", JOYSTICK[1].botoes[1]);
+			push_input_joystick(L, "X", JOYSTICK[1].botoes[2]);
+			push_input_joystick(L, "Y", JOYSTICK[1].botoes[3]);
+
+			push_input_joystick(L, "RB", JOYSTICK[1].botoes[4]);
+			push_input_joystick(L, "RT", JOYSTICK[1].botoes[5]);
+			push_input_joystick(L, "LB", JOYSTICK[1].botoes[6]);
+			push_input_joystick(L, "RT", JOYSTICK[1].botoes[7]);
+
+			push_input_joystick(L, "START", JOYSTICK[1].botoes[8]);
+			push_input_joystick(L, "BACK", JOYSTICK[1].botoes[9]);
 
 
+			lua_pushstring(L, "D_PAD");
+			lua_newtable(L);
+			{
+				push_input_joystick(L, "x", JOYSTICK[1].D_PAD.x);
+				push_input_joystick(L, "y", JOYSTICK[1].D_PAD.y);
+				
 
-		lua_pushnumber(L, output);
+				lua_settable(L, -3);
+			}
+
+			lua_pushstring(L,"analogL");
+			lua_newtable(L);
+			{
+				push_input_joystick(L, "x", JOYSTICK[1].analogio[0].x);
+				push_input_joystick(L, "y", JOYSTICK[1].analogio[0].y);
+
+				lua_settable(L, -3);
+			}
+
+			lua_pushstring(L, "analogR");
+			lua_newtable(L);
+			{
+				push_input_joystick(L, "x", JOYSTICK[1].analogio[1].x);
+				push_input_joystick(L, "y", JOYSTICK[1].analogio[1].y);
+
+				lua_settable(L, -3);
+			}
+			
+			
+		}
+		
 
 		return 1;
 	}
@@ -501,285 +552,163 @@ namespace funcoes_ponte {
 
 	//transform
 
-	int get_is_ui(lua_State* L) {
-		bool output = false;
+	int get_transform_json(lua_State* L) {
+		string output = "";
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 1 && obj != NULL) {
-			if (obj->pegar_componente<Objetos::transform>() != NULL) {
-				output = obj->pegar_componente<Objetos::transform>()->UI;
-			}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (argumentos == 1 && tf != NULL) {
+			json JSON;
+
+			JSON["is_ui"] = tf->UI;
+
+			JSON["position"] = { {"x",tf->pos.x} ,{"y",tf->pos.y} ,{"z",tf->pos.z}};
+			vec3 rot = tf->pegar_angulo_graus();
+			JSON["rotation"] = { {"x",rot.x} ,{"y",rot.y} ,{"z",rot.z} };
+			JSON["scale"] = { {"x",tf->esca.x} ,{"y",tf->esca.y} ,{"z",tf->esca.z} };
+
+			output = JSON.dump();
 		}
 
-		lua_pushboolean(L, output);
+		lua_pushstring(L, output.c_str());
 		return 1;
 	}
 
-	int set_is_ui(lua_State* L) {
+	int set_transform_json(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 2 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				tf->UI = lua_toboolean(L, 2);
-			}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (argumentos == 2 && obj != NULL && tf != NULL) {
+			json JSON = json::parse(lua_tostring(L, 2));
+			tf->UI = JSON["is_ui"].get<bool>();
+
+			json pos = JSON["position"].get<json>(), rot = JSON["rotation"].get<json>(), sca = JSON["scale"].get<json>();
+			tf->pos = vec3(pos["x"].get<float>(), pos["y"].get<float>(), pos["z"].get<float>());
+			tf->mudar_angulo_graus(vec3(rot["x"].get<float>(), rot["y"].get<float>(), rot["z"].get<float>()));
+			tf->esca = vec3(sca["x"].get<float>(), sca["y"].get<float>(), sca["z"].get<float>());
+
 		}
 		return 0;
 	}
 
-	int get_position(lua_State* L) {
-		vec3 output = vec3(0, 0, 0);
+	int move_transform(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				output = tf->pos;
-			}
-		}
-
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		return 3;
-	}
-
-	int get_global_position(lua_State* L) {
-		vec3 output = vec3(0, 0, 0);
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				output = tf->pegar_pos_global();
-			}
-		}
-
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		return 3;
-	}
-
-	int set_position(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 4 && obj != NULL) {
-
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-
-			if (tf != NULL) {
-				tf->pos = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
-
-				shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-				if (b2d != NULL) {
-					b2d->mudar_pos(vec2(lua_tonumber(L, 2), lua_tonumber(L, 3)));
-				}
-			}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (tf != NULL) {
+			vec3 v3 = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
+			tf->pos += v3;
 		}
 		return 0;
 	}
 
-	int get_local_vector_direction(lua_State* L) {
-		vec3 output = vec3(0, 0, 0);
+	int rotate_transform(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 4 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				output = tf->pegar_direcao_local(vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4)));
-			}
-		}
-
-
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		return 3;
-	}
-
-	int get_scale(lua_State* L) {
-		vec3 output = vec3(0, 0, 0);
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				output = tf->esca;
-			}
-		}
-
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		return 3;
-	}
-
-	int set_scale(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 4 && obj != NULL) {
-
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-
-			if (tf != NULL) {
-				tf->esca = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
-			}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (tf != NULL) {
+			
+			vec3 v3a = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4)),v3b = tf->pegar_angulo_graus(),v3c = vec3(v3a.x + v3b.x, v3a.y + v3b.y, v3a.z + v3b.z);
+			tf->mudar_angulo_graus(v3c);
 		}
 		return 0;
 	}
 
-	int get_rotation(lua_State* L) {
-		vec3 output = vec3(0, 0, 0);
+	int change_transfotm_position(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				output = quat_graus(tf->quater);
-			}
-		}
-
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		return 3;
-	}
-
-	int get_global_rotation(lua_State* L) {
-		vec3 output = vec3(0, 0, 0);
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-			if (tf != NULL) {
-				output = tf->pegar_graus_global();
-			}
-		}
-
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		return 3;
-	}
-
-	int set_rotation(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 4 && obj != NULL) {
-
-			shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
-
-			if (tf != NULL) {
-				tf->quater = graus_quat(vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4)));
-
-				shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-				if (b2d != NULL) {
-					b2d->mudar_rot(quat_graus(tf->quater).y);
-				}
-			}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (tf != NULL) {
+			vec3 v3 = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
+			tf->pos = v3;
 		}
 		return 0;
 	}
 
+	int change_transfotm_rotation(lua_State* L) {
+		int argumentos = lua_gettop(L);
+		objeto_jogo* obj = NULL;
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (tf != NULL) {
+			vec3 v3 = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
+			tf->mudar_angulo_graus(v3);
+		}
+		return 0;
+	}
 
+	int change_transfotm_scale(lua_State* L) {
+		int argumentos = lua_gettop(L);
+		objeto_jogo* obj = NULL;
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		shared_ptr<Objetos::transform> tf = obj->pegar_componente<Objetos::transform>();
+		if (tf != NULL) {
+			vec3 v3 = vec3(lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
+			tf->esca = v3;
+		}
+		return 0;
+	}
 
-
-
+	
 	//sprite render
 
-	int set_tileset(lua_State* L) {
-		int argumentos = lua_gettop(L);
+	
+
+
+	int get_sprite_render_json(lua_State* L) {
 		objeto_jogo* obj = NULL;
+		int argumentos = lua_gettop(L);
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 2 && obj != NULL && obj->pegar_componente<render_sprite>() != NULL) {
-			ManuseioDados::carregar_tile_set_thread(lua_tostring(L, 2), &obj->pegar_componente<render_sprite>()->tiles);
+		json JSON = {};
+		shared_ptr<render_sprite> b2d = obj->pegar_componente<render_sprite>();
+		if (b2d != NULL) {
+			JSON = {
+				{"layer",b2d->camada},
+				{"selected_tile",b2d->tile_selecionado},
+				{"tile_set_local",b2d->tiles->local},
+				{"material",material_json(b2d->mat)},
+			};
 		}
-		if (argumentos == 2 && obj != NULL && obj->pegar_componente<render_tilemap>() != NULL) {
-			ManuseioDados::carregar_tile_set_thread(lua_tostring(L, 2), &obj->pegar_componente<render_tilemap>()->tiles);
-		}
-		return 0;
-	}
-	int get_tileset(lua_State* L) {
-		string output[2];
-		output[0] = "";
-		output[1] = "";
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1) {
-			if (argumentos == 3 && obj != NULL && obj->pegar_componente<render_sprite>() != NULL) {
-				output[0] = obj->pegar_componente<render_sprite>()->tiles->local;
-			}
-			if (argumentos == 3 && obj != NULL && obj->pegar_componente<render_tilemap>() != NULL) {
-				output[0] = obj->pegar_componente<render_tilemap>()->tiles->local;
-			}
-		}
-		lua_pushstring(L, output[0].c_str());
+		lua_pushstring(L, JSON.dump().c_str());
 		return 1;
 	}
 
-	int set_tile(lua_State* L) {
-		int argumentos = lua_gettop(L);
+	int set_sprite_render_json(lua_State* L) {
 		objeto_jogo* obj = NULL;
+		int argumentos = lua_gettop(L);
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 2 && obj != NULL && obj->pegar_componente<render_sprite>() != NULL) {
-			obj->pegar_componente<render_sprite>()->tile_selecionado = lua_tointeger(L, 2);
+		json JSON = json::parse(lua_tostring(L, 2));
+		shared_ptr<render_sprite> b2d = obj->pegar_componente<render_sprite>();
+		if (b2d != NULL) {
+			b2d->camada = JSON["layer"].get<int>();
+			b2d->tile_selecionado = JSON["selected_tile"].get<int>();
+			b2d->tiles = ManuseioDados::carregar_tile_set(JSON["tile_set_local"].get<string>());
+			b2d->mat = json_material(JSON["material"].get<json>());
 		}
 		return 0;
-	}
-
-	int get_tile(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		float output = 0;
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL && obj->pegar_componente<render_sprite>() != NULL) {
-			output = obj->pegar_componente<render_sprite>()->tile_selecionado;
-		}
-		lua_pushnumber(L, output);
-		return 1;
 	}
 
 	//render tilemap
@@ -835,6 +764,46 @@ namespace funcoes_ponte {
 		}
 		if (argumentos == 2 && obj != NULL && obj->pegar_componente<render_tilemap>() != NULL) {
 			obj->pegar_componente<render_tilemap>()->apenas_camada = lua_tonumber(L, 2);
+		}
+		return 0;
+	}
+
+
+
+	int get_render_tilemap_json(lua_State* L) {
+		objeto_jogo* obj = NULL;
+		int argumentos = lua_gettop(L);
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		json JSON = {};
+		shared_ptr<render_tilemap> rtm = obj->pegar_componente<render_tilemap>();
+		if (rtm != NULL) {
+			JSON = {
+				{"layer",rtm->camada},
+				{"material",material_json(rtm->mat)},
+				{"render_tilemap_only_layer",rtm->apenas_camada},
+				{"tile_set_local",rtm->tiles->local},
+				{"tile_map_local",rtm->map_info->local},
+			};
+		}
+		lua_pushstring(L, JSON.dump().c_str());
+		return 1;
+	}
+	int set_render_tilemap_json(lua_State* L) {
+		objeto_jogo* obj = NULL;
+		int argumentos = lua_gettop(L);
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		json JSON = json::parse(lua_tostring(L, 2));
+		shared_ptr<render_tilemap> rtm = obj->pegar_componente<render_tilemap>();
+		if (rtm != NULL) {
+			rtm->camada = JSON["layer"].get<int>();
+			rtm->mat = json_material(JSON["material"].get<json>());
+			rtm->apenas_camada = JSON["render_tilemap_only_layer"].get<int>();
+			rtm->tiles = ManuseioDados::carregar_tile_set(JSON["tile_set_local"].get<string>());
+			rtm->map_info = ManuseioDados::carregar_info_tile_map(JSON["tile_map_local"].get<string>());
 		}
 		return 0;
 	}
@@ -895,173 +864,46 @@ namespace funcoes_ponte {
 		return 1;
 	}
 
+	int get_text_json(lua_State* L) {
+		int argumentos = lua_gettop(L);
+		objeto_jogo* obj = NULL;
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		json JSON = {};
+		shared_ptr<render_texto> rt = obj->pegar_componente<render_texto>();
+		if (rt != NULL && argumentos == 1) {
+			JSON = {
+				{"layer",rt->camada},
+				{"font",rt->font->local},
+				{"text",rt->texto},
+				{"material",material_json(rt->mat)},
+			};
+		}
+		lua_pushstring(L, JSON.dump().c_str());
+		return 1;
+	}
+
+	int set_text_json(lua_State* L) {
+		int argumentos = lua_gettop(L);
+		objeto_jogo* obj = NULL;
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		json JSON = {};
+		shared_ptr<render_texto> rt = obj->pegar_componente<render_texto>();
+		if (rt != NULL && argumentos == 2) {
+			JSON = json::parse(lua_tostring(L, 2));
+			rt->camada = JSON["layer"].get<int>();
+			rt->font = ManuseioDados::carregar_fonte(JSON["font"].get<string>());
+			rt->texto = JSON["text"].get<string>();
+			rt->mat = json_material(JSON["material"].get<json>());
+		}
+		return 0;
+	}
+	
+
 	//fisica
-
-	int get_physic_2D(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		float output[7];
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 7 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				output[0] = b2d->escala.x;
-				output[1] = b2d->escala.y;
-				output[2] = b2d->dinamica;
-				output[3] = b2d->forma;
-				output[4] = b2d->rotacionar;
-				output[5] = b2d->gatilho;
-				output[6] = b2d->atrito;
-			}
-		}
-
-
-
-		lua_pushnumber(L, output[0]);
-		lua_pushnumber(L, output[1]);
-		lua_pushnumber(L, output[2]);
-		lua_pushnumber(L, output[3]);
-		lua_pushboolean(L, (bool)output[4]);
-		lua_pushboolean(L, (bool)output[5]);
-		lua_pushnumber(L, output[6]);
-
-		return 5;
-	}
-
-	int set_physic_2D(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-
-		if (argumentos == 8 && obj != NULL) {
-			shared_ptr < box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				b2d->escala = vec2(lua_tonumber(L, 2), lua_tonumber(L, 3));
-				b2d->dinamica = lua_tonumber(L, 4);
-				b2d->forma = lua_tonumber(L, 5);
-				b2d->rotacionar = lua_toboolean(L, 6);
-				b2d->gatilho = lua_toboolean(L, 7);
-				b2d->atrito = lua_tonumber(L, 8);
-				b2d->aplicar();
-			}
-		}
-		return 0;
-	}
-
-	int get_physic_layer(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		float output;
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				output = b2d->camada.camada;
-			}
-		}
-
-
-
-		lua_pushnumber(L, output);
-
-		return 1;
-	}
-
-	int set_physic_layer(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-
-		if (argumentos == 2 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				b2d->camada.camada = lua_tonumber(L, 2);
-			}
-		}
-		return 0;
-	}
-
-	int get_layers_can_colide_size(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		float output;
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr < box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				output = b2d->camada.camada_colide.size();
-			}
-		}
-
-
-
-		lua_pushnumber(L, output);
-
-		return 1;
-	}
-
-	int set_layers_can_colide_size(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-
-		if (argumentos == 2 && obj != NULL) {
-			shared_ptr < box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				b2d->camada.camada_colide.resize(lua_tonumber(L, 2));
-			}
-		}
-		return 0;
-	}
-
-	int get_layers_can_colide(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		float output;
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 2 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				output = b2d->camada.camada_colide[lua_tonumber(L, 2)];
-			}
-		}
-
-
-
-		lua_pushnumber(L, output);
-
-		return 1;
-	}
-
-	int set_layers_can_colide(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-
-		if (argumentos == 3 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				b2d->camada.camada_colide[lua_tonumber(L, 2)] = lua_tonumber(L, 3);
-			}
-		}
-		return 0;
-	}
 
 	int add_force(lua_State* L) {
 		int argumentos = lua_gettop(L);
@@ -1078,40 +920,68 @@ namespace funcoes_ponte {
 		return 0;
 	}
 
-	int get_colisions_number(lua_State* L) {
+	
+
+	int get_physic_2D_json(lua_State* L) {
+		objeto_jogo* obj = NULL;
 		int argumentos = lua_gettop(L);
-		int output;
+		if (argumentos > 0) {
+			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
+		}
+		json JSON = {};
+		shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
+		if (b2d != NULL) {
+			json scale = { {"x",b2d->escala.x},{"y",b2d->escala.y}};
+			vector<string> objetos_colidindo;
+			vector<json> camada_colisao;
+			for (shared_ptr<objeto_jogo> oc : b2d->objs_colidindo) {
+				objetos_colidindo.push_back(ponteiro_string<objeto_jogo>(oc.get()));
+			}
+
+			camada_colisao.push_back({"layer",b2d->camada.camada} );
+			camada_colisao.push_back({ "layers_can_colide",b2d->camada.camada_colide });
+			
+
+
+			JSON = { 
+				{"scale",scale},
+				{"boady_dynamic",b2d->dinamica},
+				{"colision_shape",b2d->forma},
+				{"rotate",b2d->rotacionar},
+				{"triger",b2d->gatilho},
+				{"friction",b2d->atrito},
+				{"objects_coliding",objetos_colidindo},
+				{"colision_layer",camada_colisao},
+			};
+		}
+		lua_pushstring(L, JSON.dump().c_str());
+		return 1;
+	}
+	int set_physic_2D_json(lua_State* L) {
+		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 1 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL) {
-				output = b2d->objs_colidindo.size();
-			}
-		}
-		lua_pushnumber(L, output);
-		return 1;
-	}
+		shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
+		if (argumentos == 2 && b2d != NULL ) {
+			json JSON = json::parse(lua_tostring(L, 1));
 
-	int get_colision_object(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		string output;
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 2 && obj != NULL) {
-			shared_ptr<box_2D> b2d = obj->pegar_componente<box_2D>();
-			if (b2d != NULL && lua_tonumber(L, 2) >= 0 && lua_tonumber(L, 2) < b2d->objs_colidindo.size()) {
-				output = ponteiro_string(b2d->objs_colidindo[(int)lua_tonumber(L, 2)].get());
-			}
-		}
-		lua_pushstring(L, output.c_str());
-		return 1;
-	}
+			json scale = JSON["scale"].get<json>();
+			b2d->escala = vec2(scale["x"].get<float>(), scale["y"].get<float>());
+			b2d->dinamica = JSON["boady_dynamic"].get<int>();
+			b2d->forma = JSON["colision_shape"].get<int>();
+			b2d->rotacionar = JSON["rotate"].get<bool>();
+			b2d->gatilho = JSON["triger"].get<bool>();
+			b2d->atrito = JSON["friction"].get<float>();
 
+			json camada_colisao = JSON["colision_layer"].get<json>();
+			b2d->camada.camada = camada_colisao["layer"].get<int>();
+			b2d->camada.camada_colide = camada_colisao["layers_can_colide"].get<vector<int>>();
+
+		}
+		return 0;
+	}
 	//camera
 
 	int set_camera(lua_State* L) {
@@ -1207,7 +1077,7 @@ namespace funcoes_ponte {
 			output = obj->pegar_componente<sfml_audio>()->info;
 
 		}
-		lua_pushfstring(L, output.nome.c_str());
+		lua_pushstring(L, output.nome.c_str());
 		lua_pushboolean(L, output.pausa);
 		lua_pushboolean(L, output.loop);
 		lua_pushnumber(L, output.tempo);
@@ -1578,203 +1448,198 @@ namespace funcoes_ponte {
 
 
 	//post_processing
-		//api_grafica->pos_processamento_info
-	int set_post_processing_shader(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		if (api_grafica != NULL && argumentos == 1) {
-			api_grafica->pos_processamento_info.shad = lua_tostring(L, 1);
-		}
-		return 0;
-	}
+	
 
-	int get_post_processing_shader(lua_State* L) {
+	int get_post_processing_json(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		string output = "";
 		if (api_grafica != NULL) {
-			output = api_grafica->pos_processamento_info.shad;
+			vector<string> textures;
+			for (int i = 0; i < NO_TEXTURAS; i++) {
+				if (api_grafica->pos_processamento_info.texturas[i] != NULL) {
+					textures.push_back(api_grafica->pos_processamento_info.texturas[i]->local);
+				}else{
+					textures.push_back("");
+				}
+			}
+
+
+			vector<float> inputs;
+			for (int i = 0; i < NO_INPUTS; i++) {
+				inputs.push_back(api_grafica->pos_processamento_info.inputs[i]);
+			}
+			json color = { { "r",api_grafica->pos_processamento_info.cor.x }, { "g",api_grafica->pos_processamento_info.cor.y }, { "b",api_grafica->pos_processamento_info.cor.z }, { "a",api_grafica->pos_processamento_info.cor.w } };
+			json position_scale = { {"x",api_grafica->pos_processamento_info.uv_pos_sca.x},{"y",api_grafica->pos_processamento_info.uv_pos_sca.y},{"z",api_grafica->pos_processamento_info.uv_pos_sca.z},{"w",api_grafica->pos_processamento_info.uv_pos_sca.w} };
+
+			json JSON = {
+				{"shader",api_grafica->pos_processamento_info.shad},
+				{"color",color},
+				{"position_scale",position_scale},
+				{"textures",textures},
+				{"inputs",inputs},
+			};
+
+			output = JSON.dump();
 		}
 		lua_pushstring(L, output.c_str());
 		return 1;
 	}
-
-	int get_post_processing_color(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		vec4 output;
-		if (api_grafica != NULL) {
-			output = api_grafica->pos_processamento_info.cor;
-		}
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		lua_pushnumber(L, output.w);
-		return 4;
-	}
-
-	int set_post_processing_color(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		if (api_grafica != NULL && argumentos == 4) {
-			api_grafica->pos_processamento_info.cor = vec4(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
-		}
-		return 0;
-	}
-
-	int get_post_processing_position_scale(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		vec4 output;
-		if (api_grafica != NULL) {
-			output = api_grafica->pos_processamento_info.uv_pos_sca;
-		}
-		lua_pushnumber(L, output.x);
-		lua_pushnumber(L, output.y);
-		lua_pushnumber(L, output.z);
-		lua_pushnumber(L, output.w);
-		return 4;
-	}
-
-	int set_post_processing_position_scale(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		if (api_grafica != NULL && argumentos == 4) {
-			api_grafica->pos_processamento_info.uv_pos_sca = vec4(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4));
-		}
-		return 0;
-	}
-
-	int set_post_processing_texture(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		if (api_grafica != NULL && argumentos == 2) {
-			ManuseioDados::carregar_Imagem_thread(lua_tostring(L, 2), &api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)]);
-		}
-		return 0;
-	}
-
-	int get_post_processing_texture(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		string output = "";
-		if (api_grafica != NULL && argumentos == 1 && api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)] != NULL) {
-			output = api_grafica->pos_processamento_info.texturas[(int)lua_tonumber(L, 1)]->local;
-		}
-		lua_pushstring(L, output.c_str());
-		return 1;
-	}
-
-	int set_post_processing_input(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		if (api_grafica != NULL && argumentos == 2) {
-			api_grafica->pos_processamento_info.inputs[(int)lua_tonumber(L, 1)] = lua_tonumber(L, 2);
-		}
-		return 0;
-	}
-
-	int get_post_processing_input(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		float output = 0;
-		if (api_grafica != NULL && argumentos == 1) {
-			output = api_grafica->pos_processamento_info.inputs[(int)lua_tonumber(L, 1)];
-		}
-		lua_pushnumber(L, output);
-		return 1;
-	}
-
-	int get_render_layer_instruction_size(lua_State* L) {
-		int output = 0;
-
-		if (api_grafica != NULL) {
-			output = api_grafica->info_render.size();
-		}
-		lua_pushnumber(L, output);
-		return 1;
-	}
-
-	int set_render_layer_instruction_size(lua_State* L) {
+	int set_post_processing_json(lua_State* L) {
 		int argumentos = lua_gettop(L);
 		if (argumentos == 1 && api_grafica != NULL) {
-			api_grafica->info_render.resize((int)lua_tonumber(L, 1));
+			json JSON = json::parse(lua_tostring(L, 1));
+			api_grafica->pos_processamento_info.shad = JSON["shader"].get<string>();
+			json cor = JSON["color"].get<json>();
+			api_grafica->pos_processamento_info.cor = vec4(cor["r"].get<float>(), cor["g"].get<float>(), cor["b"].get<float>(), cor["a"].get<float>());
+			json uv_pos_sca = JSON["position_scale"].get<json>();
+			api_grafica->pos_processamento_info.uv_pos_sca = vec4(uv_pos_sca["x"].get<float>(), uv_pos_sca["y"].get<float>(), uv_pos_sca["z"].get<float>(), uv_pos_sca["w"].get<float>());
+			vector<string> textures = JSON["textures"].get<vector<string>>();
+			for (int i = 0; i < NO_TEXTURAS; i++) {
+					api_grafica->pos_processamento_info.texturas[i] = ManuseioDados::carregar_Imagem(textures[i]);
+			}
+			vector<float> inputs = JSON["inputs"].get<vector<float>>();
+			for (int i = 0; i < NO_INPUTS; i++) {
+				api_grafica->pos_processamento_info.inputs[i] = inputs[i];
+			}
 		}
 		return 0;
 	}
 
-	int get_render_layer_instruction(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		instrucoes_render_struct ir;
-		if (argumentos == 1) {
-			ir = api_grafica->info_render[(int)lua_tonumber(L, 1)];
-		}
-		lua_pushnumber(L, ir.camera);
-		lua_pushboolean(L, ir.iniciar_render);
-		lua_pushboolean(L, ir.limpar_buffer_cores);
-		lua_pushboolean(L, ir.limpar_buffer_profundidade);
-		lua_pushboolean(L, ir.desenhar_objetos);
-		lua_pushboolean(L, ir.terminar_render);
-		lua_pushboolean(L, ir.usar_profundidade);
-		return 7;
-	}
+	//render layers
 
-	int set_render_layer_instruction(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		if (argumentos == 8) {
-			instrucoes_render_struct ir;
-			ir.camera = (int)lua_tonumber(L, 2);
-			ir.iniciar_render = (bool)lua_toboolean(L, 3);
-			ir.limpar_buffer_cores = (bool)lua_toboolean(L, 4);
-			ir.limpar_buffer_profundidade = (bool)lua_toboolean(L, 5);
-			ir.desenhar_objetos = (bool)lua_toboolean(L, 6);
-			ir.terminar_render = (bool)lua_toboolean(L, 7);
-			ir.usar_profundidade = (bool)lua_toboolean(L, 8);
+	
 
-			api_grafica->info_render[(int)lua_tonumber(L, 1)] = ir;
+	int get_render_layer_instruction_json(lua_State* L) {
+		string output = "";
+		vector<json> camadas;
 
+		for (instrucoes_render ir : api_grafica->info_render) {
+			json camada = {
+				{"camera_selected",ir.camera},
+				{"start_render",ir.iniciar_render},
+				{"clean_color",ir.limpar_buffer_cores},
+				{"clean_deph",ir.limpar_buffer_profundidade},
+				{"enable",ir.desenhar_objetos},
+				{"end_render",ir.terminar_render},
+				{"use_deeph",ir.usar_profundidade},
+			};
+			camadas.push_back(camada);
 		}
-		return 0;
-	}
 
-	int get_mesh_size(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		int output = 0;
-		objeto_jogo* obj = NULL;
-		if (argumentos > 0) {
-			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
-		}
-		if (argumentos == 1 && obj != NULL && obj->pegar_componente<render_malha>() != NULL) {
-			output = obj->pegar_componente<render_malha>()->minhas_malhas.size();
-		}
-		lua_pushnumber(L, output);
+		json JSON = {"layers",camadas };
+		output = JSON.dump();
+		lua_pushstring(L, output.c_str());
 		return 1;
 	}
-	int set_mesh_size(lua_State* L) {
+
+	int set_render_layer_instruction_json(lua_State* L) {
+		json JSON = json::parse(lua_tostring(L,1));
+		vector<json> camadas = JSON["layers"].get<vector<json>>();
+
+		api_grafica->info_render.clear();
+
+		for (json j : camadas) {
+			instrucoes_render ir;
+
+			ir.camera = j["camera_selected"].get<int>();
+			ir.iniciar_render = j["start_render"].get<bool>();
+			ir.limpar_buffer_cores = j["clean_color"].get<bool>();
+			ir.limpar_buffer_profundidade = j["clean_deph"].get<bool>();
+			ir.desenhar_objetos = j["enable"].get<bool>();
+			ir.terminar_render = j["end_render"].get<bool>();
+			ir.usar_profundidade = j["use_deeph"].get<bool>();
+
+			api_grafica->info_render.push_back(ir);
+		}
+
+		return 0;
+	}
+
+	int get_mesh_json(lua_State* L) {
+		string output = "";
 		int argumentos = lua_gettop(L);
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 2 && obj != NULL && obj->pegar_componente<render_malha>() != NULL) {
-			obj->pegar_componente<render_malha>()->minhas_malhas.resize((int)lua_tonumber(L, 2));
-			obj->pegar_componente<render_malha>()->mats.resize((int)lua_tonumber(L, 2));
+		json JSON;
+		shared_ptr<render_malha> rm = obj->pegar_componente<render_malha>();
+		if (rm != NULL) {
+			vector<json> materials;
+			for (Material m : rm->mats) {
+				materials.push_back(material_json(m));
+			}
+
+			vector<json> meshes;
+			for (shared_ptr<malha> m : rm->minhas_malhas) {
+				meshes.push_back({ {"file",m->arquivo_origem},{"name",m->nome}});
+			}
+
+			JSON = {
+				{"layer",rm->camada},
+				{"use_oclusion",rm->usar_oclusao},
+				{"normal_direction",rm->lado_render},
+				{"meshes",meshes},
+				{"materials",materials},
+			};
 		}
-		return 0;
+
+
+		output = JSON.dump();
+		lua_pushstring(L, output.c_str());
+		return 1;
 	}
 
-	int get_mesh(lua_State* L) {
+	int set_mesh_json(lua_State* L) {
 		int argumentos = lua_gettop(L);
-		return 2;
-	}
-
-	int set_mesh(lua_State* L) {
-		int argumentos = lua_gettop(L);
-		int output = 0;
 		objeto_jogo* obj = NULL;
 		if (argumentos > 0) {
 			obj = string_ponteiro<objeto_jogo>(lua_tostring(L, 1));
 		}
-		if (argumentos == 4 && obj != NULL && obj->pegar_componente<render_malha>() != NULL) {
-			ManuseioDados::carregar_malha_thread(lua_tostring(L, 3), lua_tostring(L, 4), &obj->pegar_componente<render_malha>()->minhas_malhas[(int)lua_tonumber(L, 2)]);
+		shared_ptr<render_malha> rm = obj->pegar_componente<render_malha>();
+		if (rm != NULL) {
+			json JSON = json::parse(lua_tostring(L,2));
+			vector<json> meshe_infos = JSON["meshes"].get<json>();
+			vector<json> material_infos = JSON["materials"].get<json>();
+
+			rm->camada = JSON["layer"].get<int>();
+			rm->usar_oclusao = JSON["use_oclusion"].get<bool>();
+			rm->lado_render = JSON["normal_direction"].get<int>();
+			
+			for (json j : meshe_infos) {
+				rm->minhas_malhas.clear();
+				rm->minhas_malhas.push_back(ManuseioDados::carregar_malha(j["file"].get<string>(), j["name"].get<string>()));
+			}
+			for (json j : material_infos) {
+				rm->mats.clear();
+				rm->mats.push_back(json_material(j));
+			}
 		}
 		return 0;
 	}
 
 
+	int get_projectile_json(lua_State* L) {
+		return 0;
+	}
 
+	int set_projectile_json(lua_State* L) {
+		return 0;
+	}
+	
 
 	map<string, int(*)(lua_State*)> funcoes_ponte_map = {
+
+		//input
+		pair<string, int(*)(lua_State*)>("get_keyboard_input", funcoes_ponte::get_keyboard_input),
+		pair<string, int(*)(lua_State*)>("get_mouse_input", funcoes_ponte::get_mouse_input),
+		pair<string, int(*)(lua_State*)>("get_joystick_input", funcoes_ponte::get_joystick_input),
+		pair<string, int(*)(lua_State*)>("set_keyboard_text_input", funcoes_ponte::set_keyboard_text_input),
+		pair<string, int(*)(lua_State*)>("set_cursor_position", funcoes_ponte::set_cursor_position),
+
+		
+		
+
 		//tempo
 		pair<string, int(*)(lua_State*)>("get_time", funcoes_ponte::get_time),
 		pair<string, int(*)(lua_State*)>("set_time_scale", funcoes_ponte::set_time_scale),
@@ -1785,24 +1650,28 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("asset_is_load", funcoes_ponte::asset_is_load),
 
 		//assets
-		pair<string, int(*)(lua_State*)>("tile_set_size", funcoes_ponte::tile_set_size),
+		pair<string, int(*)(lua_State*)>("get_tile_set_size", funcoes_ponte::get_tile_set_size),
 		pair<string, int(*)(lua_State*)>("get_tile_set_tile", funcoes_ponte::get_tile_set_tile),
 		pair<string, int(*)(lua_State*)>("get_tilemap_size", funcoes_ponte::get_tilemap_size),
 		pair<string, int(*)(lua_State*)>("get_tilemap_layer_size", funcoes_ponte::get_tilemap_layer_size),
 		pair<string, int(*)(lua_State*)>("get_tilemap_data", funcoes_ponte::get_tilemap_data),
 
+		pair<string, int(*)(lua_State*)>("get_scene_3D_json", funcoes_ponte::get_scene_3D_json),
+		
+
 		//objeto
 		pair<string, int(*)(lua_State*)>("create_object", funcoes_ponte::create_object),
+		pair<string, int(*)(lua_State*)>("get_object_with_name", funcoes_ponte::get_object_with_name),
 		pair<string, int(*)(lua_State*)>("remove_object", funcoes_ponte::remove_object),
 		pair<string, int(*)(lua_State*)>("add_component", add_component),
 		pair<string, int(*)(lua_State*)>("remove_component", remove_component),
 		pair<string, int(*)(lua_State*)>("reset_components", funcoes_ponte::reset_components),
-		//pair<string, int(*)(lua_State*)>( "get_component_size", get_component_size),
 		pair<string, int(*)(lua_State*)>("have_component", have_component),
 
-		pair<string, int(*)(lua_State*)>("get_father", funcoes_ponte::get_father),
-		pair<string, int(*)(lua_State*)>("get_childrens_size", funcoes_ponte::get_childrens_size),
-		pair<string, int(*)(lua_State*)>("get_children", funcoes_ponte::get_children),
+		
+
+		pair<string, int(*)(lua_State*)>("get_object_family_json", funcoes_ponte::get_object_family_json),
+		
 
 		//movimento
 		pair<string, int(*)(lua_State*)>("to_move", funcoes_ponte::to_move),
@@ -1812,17 +1681,20 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("set_gravity", funcoes_ponte::set_gravity),
 
 		//transform
-		pair<string, int(*)(lua_State*)>("get_is_ui", funcoes_ponte::get_is_ui),
-		pair<string, int(*)(lua_State*)>("set_is_ui", funcoes_ponte::set_is_ui),
-		pair<string, int(*)(lua_State*)>("get_position", funcoes_ponte::get_position),
-		pair<string, int(*)(lua_State*)>("get_global_position", funcoes_ponte::get_global_position),
-		pair<string, int(*)(lua_State*)>("set_position", funcoes_ponte::set_position),
-		pair<string, int(*)(lua_State*)>("get_local_vector_direction", funcoes_ponte::get_local_vector_direction),
-		pair<string, int(*)(lua_State*)>("get_scale", funcoes_ponte::get_scale),
-		pair<string, int(*)(lua_State*)>("set_scale", funcoes_ponte::set_scale),
-		pair<string, int(*)(lua_State*)>("get_rotation", funcoes_ponte::get_rotation),
-		pair<string, int(*)(lua_State*)>("get_global_rotation", funcoes_ponte::get_global_rotation),
-		pair<string, int(*)(lua_State*)>("set_rotation", funcoes_ponte::set_rotation),
+		pair<string, int(*)(lua_State*)>("get_transform_json", funcoes_ponte::get_transform_json),
+		pair<string, int(*)(lua_State*)>("set_transform_json", funcoes_ponte::set_transform_json),
+
+		pair<string, int(*)(lua_State*)>("move_transform", funcoes_ponte::move_transform),
+		pair<string, int(*)(lua_State*)>("rotate_transform", funcoes_ponte::rotate_transform),
+
+		pair<string, int(*)(lua_State*)>("change_transfotm_position", funcoes_ponte::change_transfotm_position),
+		pair<string, int(*)(lua_State*)>("change_transfotm_rotation", funcoes_ponte::change_transfotm_rotation),
+		pair<string, int(*)(lua_State*)>("change_transfotm_scale", funcoes_ponte::change_transfotm_scale),
+		
+	
+	
+		
+		
 
 		//camada render
 		pair<string, int(*)(lua_State*)>("set_render_layer", funcoes_ponte::set_render_layer),
@@ -1843,40 +1715,27 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("get_material_input", funcoes_ponte::get_material_input),
 
 		//pos-procesing
-		pair<string, int(*)(lua_State*)>("set_post_processing_shader", funcoes_ponte::set_post_processing_shader),
-		pair<string, int(*)(lua_State*)>("get_post_processing_shader", funcoes_ponte::get_post_processing_shader),
-		pair<string, int(*)(lua_State*)>("get_post_processing_color", funcoes_ponte::get_post_processing_color),
-		pair<string, int(*)(lua_State*)>("set_post_processing_color", funcoes_ponte::set_post_processing_color),
-		pair<string, int(*)(lua_State*)>("get_post_processing_position_scale", funcoes_ponte::get_post_processing_position_scale),
-		pair<string, int(*)(lua_State*)>("set_post_processing_position_scale", funcoes_ponte::set_post_processing_position_scale),
-		pair<string, int(*)(lua_State*)>("set_post_processing_texture", funcoes_ponte::set_post_processing_texture),
-		pair<string, int(*)(lua_State*)>("get_post_processing_texture", funcoes_ponte::get_post_processing_texture),
-		pair<string, int(*)(lua_State*)>("set_post_processing_input", funcoes_ponte::set_post_processing_input),
-		pair<string, int(*)(lua_State*)>("get_post_processing_input", funcoes_ponte::get_post_processing_input),
+		pair<string, int(*)(lua_State*)>("get_post_processing_json", funcoes_ponte::get_post_processing_json),
+		pair<string, int(*)(lua_State*)>("set_post_processing_json", funcoes_ponte::set_post_processing_json),
 
 		//camadas render
-		pair<string, int(*)(lua_State*)>("get_render_layer_instruction_size", funcoes_ponte::get_render_layer_instruction_size),
-		pair<string, int(*)(lua_State*)>("set_render_layer_instruction_size", funcoes_ponte::set_render_layer_instruction_size),
-		pair<string, int(*)(lua_State*)>("get_render_layer_instruction", funcoes_ponte::get_render_layer_instruction),
-		pair<string, int(*)(lua_State*)>("set_render_layer_instruction", funcoes_ponte::set_render_layer_instruction),
-
+		pair<string, int(*)(lua_State*)>("get_render_layer_instruction_json", funcoes_ponte::get_render_layer_instruction_json),
+		pair<string, int(*)(lua_State*)>("set_render_layer_instruction_json", funcoes_ponte::set_render_layer_instruction_json),
+		
 
 		//janela
 		pair<string, int(*)(lua_State*)>("set_window", funcoes_ponte::set_window),
 		pair<string, int(*)(lua_State*)>("get_window", funcoes_ponte::get_window),
 
 		//sprite
-		pair<string, int(*)(lua_State*)>("set_tileset", funcoes_ponte::set_tileset),
-		pair<string, int(*)(lua_State*)>("get_tileset", funcoes_ponte::get_tileset),
-		pair<string, int(*)(lua_State*)>("set_tile", funcoes_ponte::set_tile),
-		pair<string, int(*)(lua_State*)>("get_tile", funcoes_ponte::get_tile),
+		pair<string, int(*)(lua_State*)>("get_sprite_render_json", funcoes_ponte::get_sprite_render_json),
+		pair<string, int(*)(lua_State*)>("set_sprite_render_json", funcoes_ponte::set_sprite_render_json),
+		
 
 		//render tilemap
-		pair<string, int(*)(lua_State*)>("get_tilemap", funcoes_ponte::get_tilemap),
-		pair<string, int(*)(lua_State*)>("set_tilemap", funcoes_ponte::set_tilemap),
-
-		pair<string, int(*)(lua_State*)>("get_render_only_tilemap_layer", funcoes_ponte::get_render_only_tilemap_layer),
-		pair<string, int(*)(lua_State*)>("set_render_only_tilemap_layer", funcoes_ponte::set_render_only_tilemap_layer),
+		pair<string, int(*)(lua_State*)>("get_render_tilemap_json", funcoes_ponte::get_render_tilemap_json),
+		pair<string, int(*)(lua_State*)>("set_render_tilemap_json", funcoes_ponte::set_render_tilemap_json),
+		
 
 
 		//text
@@ -1885,18 +1744,15 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("set_text", funcoes_ponte::set_text),
 		pair<string, int(*)(lua_State*)>("get_text", funcoes_ponte::get_text),
 
+		pair<string, int(*)(lua_State*)>("get_text_json", funcoes_ponte::get_text_json),
+		pair<string, int(*)(lua_State*)>("set_text_json", funcoes_ponte::set_text_json),
+		
+
 		//physic
-		pair<string, int(*)(lua_State*)>("get_physic_2D", funcoes_ponte::get_physic_2D),
-		pair<string, int(*)(lua_State*)>("set_physic_2D", funcoes_ponte::set_physic_2D),
-		pair<string, int(*)(lua_State*)>("get_physic_layer", funcoes_ponte::get_physic_layer),
-		pair<string, int(*)(lua_State*)>("set_physic_layer", funcoes_ponte::set_physic_layer),
-		pair<string, int(*)(lua_State*)>("get_layers_can_colide_size", funcoes_ponte::get_layers_can_colide_size),
-		pair<string, int(*)(lua_State*)>("set_layers_can_colide_size", funcoes_ponte::set_layers_can_colide_size),
-		pair<string, int(*)(lua_State*)>("get_layers_can_colide", funcoes_ponte::get_layers_can_colide),
-		pair<string, int(*)(lua_State*)>("set_layers_can_colide", funcoes_ponte::set_layers_can_colide),
 		pair<string, int(*)(lua_State*)>("add_force", funcoes_ponte::add_force),
-		pair<string, int(*)(lua_State*)>("get_colisions_number", funcoes_ponte::get_colisions_number),
-		pair<string, int(*)(lua_State*)>("get_colision_object", funcoes_ponte::get_colision_object),
+		pair<string, int(*)(lua_State*)>("get_physic_2D_json", funcoes_ponte::get_physic_2D_json),
+		pair<string, int(*)(lua_State*)>("set_physic_2D_json", funcoes_ponte::set_physic_2D_json),
+		
 
 		//camera
 		pair<string, int(*)(lua_State*)>("get_camera", funcoes_ponte::get_camera),
@@ -1916,11 +1772,16 @@ namespace funcoes_ponte {
 		pair<string, int(*)(lua_State*)>("set_script_var", set_script_var),
 		pair<string, int(*)(lua_State*)>("call_script_function", call_script_function),
 
-		pair<string, int(*)(lua_State*)>("get_mesh_size", get_mesh_size),
-		pair<string, int(*)(lua_State*)>("set_mesh_size", set_mesh_size),
-		pair<string, int(*)(lua_State*)>("get_mesh", get_mesh),
-		pair<string, int(*)(lua_State*)>("set_mesh", set_mesh),
+		//mesh
 
+		pair<string, int(*)(lua_State*)>("get_mesh_json", funcoes_ponte::get_mesh_json),
+		pair<string, int(*)(lua_State*)>("set_mesh_json", funcoes_ponte::set_mesh_json),
+
+		//projetil
+			pair<string, int(*)(lua_State*)>("get_projectile_json", funcoes_ponte::get_projectile_json),
+			pair<string, int(*)(lua_State*)>("get_projectile_json", funcoes_ponte::get_projectile_json),
+			
+			
 	};
 
 };
@@ -1978,7 +1839,7 @@ namespace funcoes_lua {
 		{
 			//controle & mouse
 			{
-				lua_register(L, "get_input", funcoes_ponte::get_input);
+				//lua_register(L, "get_input", funcoes_ponte::get_input);
 			}
 			//teclado
 			{
@@ -2328,6 +2189,9 @@ int add_component(lua_State* L) {
 		else if (string(lua_tostring(L, 2)).compare("render_mesh") == 0) {
 			obj->adicionar_componente<render_malha>();
 		}
+		else if (string(lua_tostring(L, 2)).compare("projectile") == 0) {
+			obj->adicionar_componente<projetil>();
+		}
 
 	}
 
@@ -2375,6 +2239,9 @@ int remove_component(lua_State* L) {
 		}
 		else if (string(lua_tostring(L, 2)).compare("render_mesh") == 0) {
 			obj->remover_componente<render_malha>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("projectile") == 0) {
+			obj->remover_componente<projetil>();
 		}
 
 	}
@@ -2440,6 +2307,9 @@ int have_component(lua_State* L) {
 		}
 		else if (string(lua_tostring(L, 2)).compare("render_mesh") == 0) {
 			obj->tem_componente<render_malha>();
+		}
+		else if (string(lua_tostring(L, 2)).compare("projectile") == 0) {
+			obj->tem_componente<projetil>();
 		}
 	}
 

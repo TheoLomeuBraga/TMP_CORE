@@ -215,7 +215,7 @@ namespace ManuseioDados {
 
 	}
 
-	void salvar_imagem(imagem* img, string local) {
+	void salvar_imagem(shared_ptr<imagem> img, string local) {
 		salvar_imagem(&img->data[0],ivec2(img->res.x, img->res.y), img->canais,local);
 	}
 
@@ -313,12 +313,12 @@ namespace ManuseioDados {
 							else if (name.compare("interactive") == 0) {
 								t.interativel = propriedades_json[b]["value"].get<int>();
 							}
-							else if (name.compare("script") == 0) {
-								t.script = propriedades_json[b]["value"].get<string>();
-							}
-							else if (name.compare("comment") == 0) {
-								t.comentario = propriedades_json[b]["value"].get<string>();
-							}
+							//else if (name.compare("script") == 0) {
+							//	t.script = propriedades_json[b]["value"].get<string>();
+							//}
+							//else if (name.compare("comment") == 0) {
+							//	t.comentario = propriedades_json[b]["value"].get<string>();
+							//}
 						}
 						
 						ret.tiles[a] = t;
@@ -440,132 +440,6 @@ namespace ManuseioDados {
 		return ret;
 	}
 
-
-	
-
-	/*
-	shared_ptr<cena_3D> importar_obj(string local){
-		//http://www.opengl-tutorial.org/beginners-tutorials/tutorial-7-model-loading/
-		string pasta = pegar_pasta_arquivo(local);
-		cena_3D ret;
-		ret.caminho = local;
-		escrever(local);
-
-		pair<string,shared_ptr<malha>> m = pair<string, shared_ptr<malha>>("",make_shared<malha>());
-		Material mat;
-
-		ifstream arquivo_obj(local);
-		string linha;
-
-		
-
-		vector<vec3> v;
-		vector<vec2> vt;
-		vector<vec3> vn;
-		vector<unsigned int> v_index,vt_index,vn_index;
-
-		string instrucao_selecionada;
-		map<string, Obj_mesh> instrucoes = { pair<string,Obj_mesh>("",{}) };
-
-		bool s;
-		string usemtl;
-		vector<unsigned int> f;
-		while (getline(arquivo_obj, linha)) {
-
-			stringstream ss;
-			ss << linha;
-
-			vector<string> valor_linha;
-			valor_linha.resize(4);
-			ss >> valor_linha[0] >> valor_linha[1] >> valor_linha[2] >> valor_linha[3];
-			if(!valor_linha[0].compare("o")){
-				instrucoes.insert(pair<string, Obj_mesh>(valor_linha[1], {}));
-				instrucao_selecionada = valor_linha[1];
-
-			}else if (!valor_linha[0].compare("v")) {
-				vec3 v3;
-				v3.x = stof(valor_linha[1]);
-				v3.y = stof(valor_linha[2]);
-				v3.z = stof(valor_linha[3]);
-				v.push_back(v3);
-			}else if(!valor_linha[0].compare("vt")){
-				vec2 v2;
-				v2.x = stof(valor_linha[1]);
-				v2.y = stof(valor_linha[2]);
-				vt.push_back(v2);
-			}else if(!valor_linha[0].compare("vn")){
-				vec3 v3;
-				v3.x = stof(valor_linha[1]);
-				v3.y = stof(valor_linha[2]);
-				v3.z = stof(valor_linha[3]);
-				vn.push_back(v3);
-			}else if(!valor_linha[0].compare("usemtl")){
-				usemtl = valor_linha[1];
-			}else if(!valor_linha[0].compare("s")){
-				map<string,bool> m = {pair<string,bool>("on",true),pair<string,bool>("off",false)};
-				s = m[valor_linha[1]];
-			}else if(!valor_linha[0].compare("f")){
-
-				vec3 a = decode_obj_f(valor_linha[1]);
-				vec3 b = decode_obj_f(valor_linha[2]);
-				vec3 c = decode_obj_f(valor_linha[3]);
-
-				v_index.push_back(a.x - 1);
-				v_index.push_back(b.x - 1);
-				v_index.push_back(c.x - 1);
-
-				vt_index.push_back(a.y - 1);
-				vt_index.push_back(b.y - 1);
-				vt_index.push_back(c.y - 1);
-
-				vn_index.push_back(a.z - 1);
-				vn_index.push_back(b.z - 1);
-				vn_index.push_back(c.z - 1);
-
-
-
-			}
-		}
-
-		//transformar em mesh
-		m.second->vertices.resize(v_index.size());
-		m.second->indice.resize(v_index.size());
-		for(int i = 0;i < v_index.size();i++){
-			m.second->indice[i] = i;
-
-			m.second->vertices[i].posicao[0] = v[v_index[i]].x;
-			m.second->vertices[i].posicao[1] = v[v_index[i]].y;
-			m.second->vertices[i].posicao[2] = v[v_index[i]].z;
-
-			m.second->vertices[i].uv[0] = vt[vt_index[i]].x;
-			m.second->vertices[i].uv[1] = vt[vt_index[i]].y;
-
-			m.second->vertices[i].normal[0] = vn[vn_index[i]].x;
-			m.second->vertices[i].normal[1] = vn[vn_index[i]].y;
-			m.second->vertices[i].normal[2] = vn[vn_index[i]].z;
-
-
-
-
-
-		}
-
-		//adicionar malha
-		m.second->comprimir();
-		m.second->pegar_tamanho_maximo();
-		ret.malhas.insert(m);
-		ret.objetos.minhas_malhas.push_back(m.first);
-
-
-		//adicionar material
-		ret.materiais.insert(pair<string,Material>("material",mat));
-		ret.objetos.meus_materiais.push_back("material");
-
-		cenas_3D.aplicar(local,ret);
-		return cenas_3D.pegar(local);
-	}
-	*/
-
 struct Obj_mesh_index_struct
 {
 	
@@ -674,7 +548,7 @@ shared_ptr<cena_3D> importar_obj(string local) {
 		m.second->indice.resize(p.second.v_index.size());
 		
 		
-
+		m.second->nome = p.first;
 		
 
 		for (int i = 0; i < p.second.v_index.size(); i++) {
@@ -705,6 +579,7 @@ shared_ptr<cena_3D> importar_obj(string local) {
 		
 
 		//adicionar malha
+		m.second->arquivo_origem = local;
 		m.second->comprimir();
 		m.second->pegar_tamanho_maximo();
 		ret.malhas.insert(m);
@@ -728,6 +603,8 @@ shared_ptr<cena_3D> importar_obj(string local) {
 		cena_3D ret;
 		ret.caminho = local;
 
+		//https://github.com/stefanha/map-files
+
 		cenas_3D.aplicar(local,ret);
 		return cenas_3D.pegar(local);
 	}
@@ -744,17 +621,17 @@ shared_ptr<cena_3D> importar_obj(string local) {
 	}
 	void importar_gltf_thread(string local, shared_ptr<cena_3D>* ret){
 			*ret = importar_gltf(local);
-		}
+	}
 
-
-
-	shared_ptr<cena_3D> carregar_modelo_3D(string local){
-		map<string,shared_ptr<cena_3D>(*)(string)> funcs = {
+	//arquivo_origem
+	map<string, shared_ptr<cena_3D>(*)(string)> funcoes_abrir_modelos_3D = {
 			pair<string,shared_ptr<cena_3D>(*)(string)>(".obj",importar_obj),
 			pair<string,shared_ptr<cena_3D>(*)(string)>(".map",importar_map),
 			pair<string,shared_ptr<cena_3D>(*)(string)>(".gltf",importar_gltf),
-		};
-		return funcs[pegar_estencao_arquivo(local)](local);
+	};
+	shared_ptr<cena_3D> carregar_modelo_3D(string local){
+		
+		return funcoes_abrir_modelos_3D[pegar_estencao_arquivo(local)](local);
 	}
 	void carregar_modelo_3D(string local, shared_ptr<cena_3D>* ret){
 		*ret = carregar_modelo_3D(local);

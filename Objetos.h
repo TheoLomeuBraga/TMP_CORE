@@ -48,7 +48,7 @@ namespace Objetos {
 			matrizTransform = MatrizMundi;
 		}
 
-		string nome;
+		
 		bool UI = false;
 		transform* paiTF;
 		
@@ -388,7 +388,7 @@ namespace Objetos {
 		public:
 		render_malha() {}
 		bool ligado = true;
-		lado_render_malha lado_render = lado_render_malha::both;
+		char lado_render = lado_render_malha::both;
 		bool usar_oclusao = true;
 		float porcentagem_pode_ocupar_tela = 1;
 		uint8_t camada = 0;
@@ -468,7 +468,7 @@ namespace Objetos {
 		
 		bool lixo = false;
 		int ID;
-		string tag;
+		string nome;
 		bool em_cena = false;
 
 		objeto_jogo* pai;
@@ -506,7 +506,7 @@ namespace Objetos {
 		}
 
 		objeto_jogo(string t) { 
-			tag = t;
+			nome = t;
 		}
 
 		void excluir() {
@@ -759,6 +759,8 @@ namespace Objetos {
 
 		shared_ptr<objeto_jogo> operator [] (int i) { return lista_objetos[i]; }
 
+		shared_ptr<objeto_jogo> operator [] (string s) { return pegar_objeto_nome(s); }
+
 		void remover_objeto(shared_ptr<objeto_jogo> obj) {
 			obj->finalisar();
 			obj->marcar_em_cena_como(false);
@@ -874,7 +876,16 @@ namespace Objetos {
 				}
 			}
 		}
-		//remover objeto
+
+		shared_ptr<objeto_jogo> pegar_objeto_nome(string n) {
+			shared_ptr<objeto_jogo> ret = NULL;
+			for (shared_ptr<objeto_jogo> obj : lista_objetos) {
+				if (!obj->nome.compare(n)) {
+					return obj;
+				}
+			}
+			return ret;
+		}
 
 		
 		void atualisar() {

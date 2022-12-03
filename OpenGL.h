@@ -46,7 +46,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 		map<fonte*, vector<unsigned char*> > fontes_data;
 
 		map<imagem*, unsigned int> texturas;
-		map<string, unsigned int> shaders;
+		map<string, unsigned int> shaders,compute_shaders;
 		map<malha*, mesh_ogl> malhas;
 
 		//shader
@@ -149,6 +149,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 		}
 
+		
 
 		unsigned int pegar_shader(string shade) {
 			if (shaders.find(shade) == shaders.end()) {
@@ -189,13 +190,34 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 
-		void remover_shader(shader* shade) {
-			if (shaders.find(shade->local) != shaders.end()) {
-				glDeleteShader(shaders[shade->local]);
-				shaders.erase(shade->local);
+		void remover_shader(string shade) {
+			if (shaders.find(shade) != shaders.end()) {
+				glDeleteShader(shaders[shade]);
+				shaders.erase(shade);
 			}
 		}
 
+
+		unsigned int pegar_compute_shader(string shade) {
+			if (compute_shaders.find(shade) == compute_shaders.end()) {
+				compute_shaders.insert(pair<string, unsigned int>(shade, CompilarShader_ogl({pair<string, unsigned int> (shade + "/glsl.comp",GL_COMPUTE_SHADER)})));
+			}
+			return compute_shaders[shade];
+		}
+
+		//https://medium.com/@daniel.coady/compute-shaders-in-opengl-4-3-d1c741998c03
+		shared_ptr<imagem> rodar_compute_shader(Material mat, int resx, int resy, int chanels) { 
+			shared_ptr<imagem> ret = NULL;
+
+			return ret;
+		}
+
+		void remover_compute_shader(string shade) {
+			if (compute_shaders.find(shade) != compute_shaders.end()) {
+				glDeleteShader(compute_shaders[shade]);
+				compute_shaders.erase(shade);
+			}
+		}
 
 
 		shared_ptr<malha> oclusion_box;
@@ -296,7 +318,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 				glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizVisao[0][0]);
 				glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &cam->pegar_componente<Objetos::camera>()->matrizProjecao[0][0]);
 				selecionar_desenhar_malha_querie(oclusion_box.get());
-				glEndQuery (GL_SAMPLES_PASSED);
+				glEndQuery(GL_SAMPLES_PASSED);
 				
 
 			}
@@ -320,10 +342,11 @@ typedef struct mesh_ogl_struct mesh_ogl;
 		map<shared_ptr<objeto_jogo>, unsigned int> oclusion_queries2;
 		map<shared_ptr<objeto_jogo>, int> oclusion_queries_resultados2;
 		for (pair<shared_ptr<objeto_jogo>, unsigned int> p : oclusion_queries) {
-			if (p.first.use_count() >= 1) {
+			if (p.first.use_count() > 3) {
 				oclusion_queries2.insert(p);
 				oclusion_queries_resultados2.insert(pair<shared_ptr<objeto_jogo>, int>(p.first,0));
 			} else {
+				cout << "querie: " << p.second << " foi deletada" << endl;
 				glDeleteQueries(1, &p.second);
 			}
 		}
@@ -647,7 +670,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 
-		imagem* captura_de_tela() {
+		shared_ptr<imagem> captura_de_tela() {
 
 			unsigned char* data = new unsigned char[configuracoes::janelaConfig.X * configuracoes::janelaConfig.Y * 4];
 			unsigned char* data2 = new unsigned char[configuracoes::janelaConfig.X * configuracoes::janelaConfig.Y * 4];
@@ -666,7 +689,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 				}
 			}
 
-			imagem* ret = new imagem(configuracoes::janelaConfig.X, configuracoes::janelaConfig.Y, 4, data);
+			shared_ptr<imagem> ret = make_shared<imagem>( imagem(configuracoes::janelaConfig.X, configuracoes::janelaConfig.Y, 4, data));
 
 			delete[] data2;
 			//ret->data = data;
@@ -1162,12 +1185,13 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 						case lado_render_malha::front:
 							glEnable(GL_CULL_FACE);
-							glCullFace(GL_FRONT);
+							glCullFace(GL_BACK);
 							break;
 
 						case lado_render_malha::back:
 							glEnable(GL_CULL_FACE);
-							glCullFace(GL_BACK);
+							glCullFace(GL_FRONT);
+							
 							break;
 						}
 
