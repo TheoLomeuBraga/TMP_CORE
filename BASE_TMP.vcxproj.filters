@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="componentes_Adicionais.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="ManusearArquivos.h" />
+    <ClInclude Include="RecursosT.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Tempo.h" />
+    <ClInclude Include="Cena.h" />
+    <ClInclude Include="DesenharTexto.h" />
+    <ClInclude Include="Console_Comando.h" />
+    <ClInclude Include="Objetos.h" />
+    <ClInclude Include="Converter_JSON.h" />
+    <ClInclude Include="vibrar_controle.cpp" />
+    <ClInclude Include="OpenGL.h" />
+    <ClInclude Include="LoopPrincipal.h" />
+    <ClInclude Include="Comandos.h" />
+    <ClInclude Include="OBJ_importer.h" />
+    <ClInclude Include="serializador_binario.h" />
+    <ClInclude Include="Assets.h" />
+    <ClInclude Include="sfml_audio.h" />
+    <ClInclude Include="box_2d.h" />
+    <ClInclude Include="implementacao_lua.h" />
+    <ClInclude Include="base64.h" />
+    <ClInclude Include="implementacao_glfw.h" />
+    <ClInclude Include="projetil.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BASE_TMP.cpp" />
+    <ClCompile Include="testesOpenGL.cpp" />
+    <ClCompile Include="implementacao_windows.cpp" />
+  </ItemGroup>
+</Project>

@@ -544,7 +544,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 		void remover_fonte(fonte* f) {
 
-
+			if(fontes.find(f) != fontes.end())
 			for (int i = 0; i < NUM_CARACTERES; i++) {
 				glDeleteTextures(1, &fontes[f][i]);
 				delete[] fontes[f];
@@ -825,7 +825,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 					shared_ptr<fonte> font = rt->font;
-					if (rt->font == NULL) {
+					if (font == NULL) {
 						font = fonte_principal;
 					}
 
@@ -838,12 +838,14 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					float altura_linha = 0;
 					float tamanho_linha = 0;
 
+
 					for (int i = 0; i < texto.size(); i++) {
-						if (texto.at(i) == '\n') {
+						char letra = texto.at(i);
+						if (letra == '\n') {
 							altura_linha -= +rt->sepaco_entre_linhas;
 							pos_char.x = 0;
 						}
-						else if (texto.at(i) == ' ') {
+						else if (letra == ' ') {
 							pos_char.x += rt->tamanho_espaco;
 							if (pos_char.x > rt->tamanho_max_linha) {
 								altura_linha -= +rt->sepaco_entre_linhas;
@@ -852,30 +854,32 @@ typedef struct mesh_ogl_struct mesh_ogl;
 						}
 						else {
 
+							
 
-							pos_adi_char.x = font->Characters[texto.at(i)].pos_sca.x / (float)font->qualidade;
-							pos_adi_char.y = font->Characters[texto.at(i)].pos_sca.y / (float)font->qualidade;
+							//pos_adi_char.x = font->Characters[letra].pos_sca.x / (float)font->qualidade;
+							pos_adi_char.x = ((unsigned int)font->Characters[letra].avancamento >> 6) / (float)font->qualidade;
+							pos_adi_char.y = font->Characters[letra].pos_sca.y / (float)font->qualidade;
 
 
-							sca_char.x = font->Characters[texto.at(i)].pos_sca.z / (float)font->qualidade;
-							sca_char.y = font->Characters[texto.at(i)].pos_sca.w / (float)font->qualidade;
+							sca_char.x = font->Characters[letra].pos_sca.z / (float)font->qualidade;
+							sca_char.y = font->Characters[letra].pos_sca.w / (float)font->qualidade;
 
 							mat4 lugar_letra = translate(lugar_texto, vec3(pos_char.x + pos_adi_char.x, pos_char.y + pos_adi_char.y + altura_linha, 0));
 							lugar_letra = scale(lugar_letra, vec3(sca_char.x, sca_char.y, 0));
 
 
-
+							
 
 							//textura
-							if (rt->font == NULL) {
+							if (font == NULL) {
 								adicionar_fonte(fonte_principal.get());
 								glActiveTexture(GL_TEXTURE0);
-								glBindTexture(GL_TEXTURE_2D, fontes[fonte_principal.get()][texto.at(i)]);
+								glBindTexture(GL_TEXTURE_2D, fontes[fonte_principal.get()][letra]);
 							}
 							else {
-								adicionar_fonte(rt->font.get());
+								adicionar_fonte(font.get());
 								glActiveTexture(GL_TEXTURE0);
-								glBindTexture(GL_TEXTURE_2D, fontes[rt->font.get()][texto.at(i)]);
+								glBindTexture(GL_TEXTURE_2D, fontes[font.get()][letra]);
 							}
 
 							glUniform1i(glGetUniformLocation(shader_s, "textures[0]"), 0);
@@ -890,11 +894,11 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 
-							pos_char.x += (font->Characters[texto.at(i)].avancamento / font->Characters[texto.at(i)].res.x) + rt->sepaco_entre_letras;
-							//pos_char.x += ((font->Characters[texto.at(i)].avancamento / font->qualidade) * 2) + rt->sepaco_entre_letras;
-							//pos_char.x += (((font->Characters[texto.at(i)].avancamento / font->Characters[texto.at(i)].res.x) +  ((font->Characters[texto.at(i)].avancamento / font->qualidade) * 2))/2) + rt->sepaco_entre_letras;
+							pos_char.x += (font->Characters[letra].avancamento / font->Characters[letra].res.x) + rt->sepaco_entre_letras;
+							//pos_char.x += ((font->Characters[letra].avancamento / font->qualidade) * 2) + rt->sepaco_entre_letras;
+							//pos_char.x += (((font->Characters[letra].avancamento / font->Characters[letra].res.x) +  ((font->Characters[letra].avancamento / font->qualidade) * 2))/2) + rt->sepaco_entre_letras;
 
-							//cout << (char)texto.at(i)  << "	" <<  (font->Characters[texto.at(i)].avancamento / font->Characters[texto.at(i)].res.x) + rt->sepaco_entre_letras << endl;
+							//cout << (char)letra  << "	" <<  (font->Characters[letra].avancamento / font->Characters[letra].res.x) + rt->sepaco_entre_letras << endl;
 
 
 							if (pos_char.x > rt->tamanho_max_linha) {
@@ -1029,6 +1033,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 							float tacha_erro = 1.5f;
 							if (pos_tela.x < -tacha_erro || pos_tela.x > tacha_erro) { visivel = false; }
+							//bool visivel = !(pos_tela.x < -tacha_erro || pos_tela.x > tacha_erro);
 
 
 							if (visivel) {
@@ -1099,6 +1104,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 					//transform
 					glUniform1i(glGetUniformLocation(shader_s, "ui"), tf->UI);
+					//glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &tf->matrizTransform[0][0]);
 					glUniformMatrix4fv(glGetUniformLocation(shader_s, "transform"), 1, GL_FALSE, &tf->matrizTransform[0][0]);
 					glUniformMatrix4fv(glGetUniformLocation(shader_s, "vision"), 1, GL_FALSE, &ca->matrizVisao[0][0]);
 					glUniformMatrix4fv(glGetUniformLocation(shader_s, "projection"), 1, GL_FALSE, &ca->matrizProjecao[0][0]);

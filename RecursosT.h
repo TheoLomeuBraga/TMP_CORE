@@ -397,6 +397,7 @@ public:
 			int ID = -1;
 			int qualidade;
 			bool pixel_perfeito;
+			float avancamento;
 			Caractere_info Characters[NUM_CARACTERES];
 			void remover_da_api_grafica();
 			

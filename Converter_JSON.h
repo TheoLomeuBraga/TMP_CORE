@@ -123,6 +123,9 @@ namespace desconverter_JSON {
 
 		ret.qualidade = JSON["quality"].get<int>();
 		ret.pixel_perfeito = (bool)JSON["pixel_perfect"].get<int>();
+		if (JSON.find("adivancement") != JSON.end()) {
+			ret.avancamento = JSON["adivancement"].get<float>();
+		}
 		vector<json> carac = JSON["Chars"].get<vector<json>>();
 		for (int i = 0; i < NUM_CARACTERES; i++) {
 			ret.Characters[i] = desconverter_caractere(carac[i]);

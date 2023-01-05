@@ -299,7 +299,6 @@ namespace ManuseioDados {
 						vector<json> propriedades_json = tiles_infos[a]["properties"].get<vector<json>>();
 						for (int b = 0; b < propriedades_json.size(); b++) {
 							string name = propriedades_json[b]["name"].get<string>();
-							//escrever(name);
 
 							if (name.compare("name") == 0) {
 								t.nome = propriedades_json[b]["value"].get<string>();
@@ -313,12 +312,7 @@ namespace ManuseioDados {
 							else if (name.compare("interactive") == 0) {
 								t.interativel = propriedades_json[b]["value"].get<int>();
 							}
-							//else if (name.compare("script") == 0) {
-							//	t.script = propriedades_json[b]["value"].get<string>();
-							//}
-							//else if (name.compare("comment") == 0) {
-							//	t.comentario = propriedades_json[b]["value"].get<string>();
-							//}
+							
 						}
 						
 						ret.tiles[a] = t;
@@ -377,7 +371,16 @@ namespace ManuseioDados {
 
 				
 				for (int i = 0; i < camadas.size(); i++) {
-					ret.info[i] = camadas[i]["data"].get<vector<int>>();
+					if (camadas[i]["type"].get<string>().compare("tilelayer") == 0) {
+						ret.info[i] = camadas[i]["data"].get<vector<int>>();
+					}
+					else {
+						ret.info[i].resize(ret.res.x * ret.res.y);
+						for (int a = 0; a < ret.res.x * ret.res.y; a++) {
+							ret.info[i][a] = 0;
+						}
+					}
+					
 				}
 				
 
