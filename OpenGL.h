@@ -842,22 +842,31 @@ typedef struct mesh_ogl_struct mesh_ogl;
 					for (int i = 0; i < texto.size(); i++) {
 						char letra = texto.at(i);
 						if (letra == '\n') {
-							altura_linha -= +rt->sepaco_entre_linhas;
+							altura_linha -= +rt->espaco_entre_linhas;
 							pos_char.x = 0;
 						}
 						else if (letra == ' ') {
 							pos_char.x += rt->tamanho_espaco;
 							if (pos_char.x > rt->tamanho_max_linha) {
-								altura_linha -= +rt->sepaco_entre_linhas;
+								altura_linha -= +rt->espaco_entre_linhas;
 								pos_char.x = 0;
 							}
 						}
 						else {
 
+							//std::cout << "a " << font->Characters['a'].avancamento << endl;
+							//std::cout << "space " << font->Characters[' '].avancamento << endl;
+							//std::cout << "l " << font->Characters['l'].avancamento << endl;
+
+							
+							//pos_adi_char.x = (float)(((unsigned int)font->Characters[letra].avancamento >> 6) / font->qualidade);
+							float meia_qualidade = font->qualidade / 2;
+							pos_adi_char.x = (font->Characters[letra].avancamento + meia_qualidade) / font->qualidade ;
 							
 
-							//pos_adi_char.x = font->Characters[letra].pos_sca.x / (float)font->qualidade;
-							pos_adi_char.x = ((unsigned int)font->Characters[letra].avancamento >> 6) / (float)font->qualidade;
+							//pos_adi_char.x = 0;
+							//pos_adi_char.x = ((unsigned int)font->Characters[letra].avancamento >> 6);
+
 							pos_adi_char.y = font->Characters[letra].pos_sca.y / (float)font->qualidade;
 
 
@@ -865,7 +874,7 @@ typedef struct mesh_ogl_struct mesh_ogl;
 							sca_char.y = font->Characters[letra].pos_sca.w / (float)font->qualidade;
 
 							mat4 lugar_letra = translate(lugar_texto, vec3(pos_char.x + pos_adi_char.x, pos_char.y + pos_adi_char.y + altura_linha, 0));
-							lugar_letra = scale(lugar_letra, vec3(sca_char.x, sca_char.y, 0));
+							lugar_letra = scale(lugar_letra, vec3(sca_char.x, sca_char.y, 1));
 
 
 							
@@ -894,15 +903,16 @@ typedef struct mesh_ogl_struct mesh_ogl;
 
 
 
-							pos_char.x += (font->Characters[letra].avancamento / font->Characters[letra].res.x) + rt->sepaco_entre_letras;
-							//pos_char.x += ((font->Characters[letra].avancamento / font->qualidade) * 2) + rt->sepaco_entre_letras;
-							//pos_char.x += (((font->Characters[letra].avancamento / font->Characters[letra].res.x) +  ((font->Characters[letra].avancamento / font->qualidade) * 2))/2) + rt->sepaco_entre_letras;
+							
+							float pos_adi = pos_adi_char.x + rt->espaco_entre_letras;
+							pos_adi = max(pos_adi, rt->espaco_entre_letras_min);
+							pos_adi = min(pos_adi, rt->espaco_entre_letras_max);
 
-							//cout << (char)letra  << "	" <<  (font->Characters[letra].avancamento / font->Characters[letra].res.x) + rt->sepaco_entre_letras << endl;
-
+							pos_char.x += pos_adi;
+							
 
 							if (pos_char.x > rt->tamanho_max_linha) {
-								altura_linha -= +rt->sepaco_entre_linhas;
+								altura_linha -= +rt->espaco_entre_linhas;
 								pos_char.x = 0;
 							}
 

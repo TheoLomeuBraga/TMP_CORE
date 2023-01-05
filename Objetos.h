@@ -343,8 +343,9 @@ namespace Objetos {
 		uint8_t camada = 0;
 		float tamanho_max_linha = 34;
 		float tamanho_espaco = 1;
-		float sepaco_entre_letras = 0.2f;
-		float sepaco_entre_linhas = 3;
+		float espaco_entre_letras = 0.0f;
+		float espaco_entre_letras_max = 3.0f, espaco_entre_letras_min = 0.0f;
+		float espaco_entre_linhas = 3;
 		string texto = "";
 
 

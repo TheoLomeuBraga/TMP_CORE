@@ -877,6 +877,10 @@ namespace funcoes_ponte {
 				{"layer",rt->camada},
 				{"font",rt->font->local},
 				{"text",rt->texto},
+				{"line_size",rt->tamanho_max_linha},
+				{"space_betwen_chars",rt->espaco_entre_letras},
+				{"max_space_betwen_chars",rt->espaco_entre_letras_max},
+				{"min_space_betwen_chars",rt->espaco_entre_letras_min},
 				{"material",material_json(rt->mat)},
 			};
 		}
@@ -897,6 +901,10 @@ namespace funcoes_ponte {
 			rt->camada = JSON["layer"].get<int>();
 			rt->font = ManuseioDados::carregar_fonte(JSON["font"].get<string>());
 			rt->texto = JSON["text"].get<string>();
+			rt->espaco_entre_letras = JSON["space_betwen_chars"].get<float>();
+			rt->espaco_entre_letras_max = JSON["max_space_betwen_chars"].get<float>();
+			rt->espaco_entre_letras_min = JSON["min_space_betwen_chars"].get<float>();
+			rt->tamanho_max_linha = JSON["line_size"].get<float>();
 			rt->mat = json_material(JSON["material"].get<json>());
 		}
 		return 0;
